@@ -2,7 +2,7 @@ import requests
 
 # Azure Prompt Flow endpoint and API key
 endpoint = "https://us-customs-rules-vnvgf.eastus2.inference.ml.azure.com/score"
-api_key = "60Wh1UeSsQ1PSWkhoSQ0VyNyYloDGzo9qcmbs9KuS0Jm8UFwtTaOJQQJ99BDAAAAAAAAAAAAINFRAZML2zQy"
+api_key = "CEaudbB30Gj5ugzLgFNVPHuqchxZS1OKeGc9zKhdnBlq2SyeZvhQJQQJ99BDAAAAAAAAAAAAINFRAZML3GBK"
 
 headers = {
     "Content-Type": "application/json",
