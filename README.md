@@ -17,6 +17,27 @@ The US Customs Rules Chatbot is designed to help travelers and importers navigat
 - **Timestamp Display**: Shows when messages were sent
 - **Custom Styling**: Branded with FBG's color scheme and logo
 
+## Project Structure
+
+```
+customs-chatbot/
+├── src/
+│   ├── backend/
+│   │   ├── src/
+│   │   │   ├── router/
+│   │   │   │   └── customs_router.py  # Handles all backend API requests to Prompt Flow
+│   │   │   └── server.py              # Minimal Flask app exposing /api/customs/ask
+│   │   └── requirements.txt
+│   ├── frontend/
+│   │   ├── src/
+│   │   │   └── CustomsAgentTest.jsx   # Main UI for sending queries
+│   │   └── ...
+├── .env                              # Backend API key for Prompt Flow
+└── README.md
+```
+
+All other backend files referencing Azure/OpenAI/legacy agent code are deprecated and archived.
+
 ## Technical Implementation
 
 ### Architecture
@@ -24,70 +45,58 @@ The US Customs Rules Chatbot is designed to help travelers and importers navigat
 The US Customs Rules Chatbot is built using the following technologies:
 
 - **Frontend**: React.js with modern JavaScript (ES6+)
-- **API Communication**: Axios for HTTP requests
-- **Text Processing**: Marked library for Markdown parsing
-- **Security**: DOMPurify for sanitizing HTML content
+- **Backend**: Flask (Python) exposing a single `/api/customs/ask` endpoint
+- **API Communication**: Axios (frontend) and `requests` (backend) for HTTP requests
+- **Data Source**: Azure ML Prompt Flow REST API (no direct OpenAI or agent usage)
+- **Security**: API key authentication for backend-to-Prompt Flow calls
 - **Styling**: CSS with variables for consistent theming
 
 ### Connection Details
 
-The chatbot connects to Azure OpenAI Service with the following configuration:
+The chatbot backend now connects exclusively to the Azure ML Prompt Flow REST API with the following configuration:
 
-```javascript
-// API Connection
-const endpoint = process.env.REACT_APP_AZURE_OPENAI_ENDPOINT;
-const apiKey = process.env.REACT_APP_AZURE_OPENAI_KEY;
-const apiVersion = process.env.REACT_APP_AZURE_OPENAI_API_VERSION;
+**Backend → Prompt Flow API**
 
-// API Request
-const response = await axios.post(
-  `${endpoint}openai/deployments/gpt-4.5-preview/chat/completions?api-version=${apiVersion}`,
-  {
-    messages: [...messages, userMsg],
-    max_tokens: 512,
-    temperature: 0.7,
-    stream: false
-  },
-  {
-    headers: {
-      "api-key": apiKey,
-      "Content-Type": "application/json"
-    }
-  }
-);
-```
+- The backend exposes a single endpoint: `/api/customs/ask`.
+- This endpoint forwards user messages to the Azure ML Prompt Flow REST API:
 
-### Agent Information
+  - **Target URI:** `https://us-customs-rules-vnvgf.eastus2.inference.ml.azure.com/score`
+  - **Authentication:** API Key (provided via environment variable `PROMPT_FLOW_API_KEY`)
 
-- **Model**: GPT-4.5-preview
-- **Temperature**: 0.7 (balanced between creativity and consistency)
-- **Max Tokens**: 512 (suitable for detailed responses without excessive length)
-- **Initial Message**: "Welcome to the US Customs Rules Agent! I can provide information about import regulations, duty-free allowances, restricted items, and travel declarations. How can I assist you with customs information today?"
+**Frontend → Backend**
 
-## Setup and Configuration
+- The frontend sends user queries to `/api/customs/ask` via Axios.
+- No direct calls are made from the frontend to Azure or external APIs.
+
+### Prompt Flow Integration
 
 ### Environment Variables
 
-Create a `.env.local` file in the project root with the following variables:
+**Backend:**
+Create a `.env` file in `src/backend` with the following variable:
 
 ```
-REACT_APP_AZURE_OPENAI_ENDPOINT=your_azure_openai_endpoint
-REACT_APP_AZURE_OPENAI_KEY=your_azure_openai_key
-REACT_APP_AZURE_OPENAI_API_VERSION=your_api_version
+PROMPT_FLOW_API_KEY=your_azure_ml_prompt_flow_api_key
 ```
+
+**Frontend:**
+No special environment variables are required for the new integration.
 
 ### Installation
 
 ```bash
-# Navigate to the frontend directory
+# Start the backend (Flask)
+cd src/backend
+python src/server.py
+
+# In a separate terminal, start the frontend (Vite/React)
 cd src/frontend
-
-# Install dependencies
 npm install
-
-# Start the development server
-npm start
+npm run dev
 ```
+
+- The frontend will be available at http://localhost:5173
+- The backend API will be available at http://localhost:5000/api/customs/ask
 
 ### Building for Production
 
@@ -97,6 +106,12 @@ npm run build
 
 # Deploy the contents of the build folder to your hosting service
 ```
+
+### Troubleshooting
+- If you see a **CORS error** or `404 Not Found` when calling `/api/customs/ask`, make sure:
+  - The Flask backend is running on port 5000.
+  - The proxy is correctly set in `vite.config.js`.
+  - You are not calling the Azure ML endpoint directly from the frontend.
 
 ## UI Components
 
@@ -148,13 +163,9 @@ To deploy this application to Vercel:
 1. Ensure you have the `vercel.json` configuration file in the root of your repository
 2. Connect your repository to Vercel
 3. Set the following environment variables in your Vercel project settings:
-   - `VITE_OPENAI_ENDPOINT`: Your Azure OpenAI endpoint
-   - `VITE_OPENAI_API_KEY`: Your Azure OpenAI API key
-   - `VITE_OPENAI_API_VERSION`: API version (e.g., "2023-09-01-preview")
-   - `VITE_US_CUSTOMS_AGENT_CONN_STR`: Connection string for US Customs Agent
-   - `VITE_US_CUSTOMS_AGENT_ID`: Assistant ID for the US Customs Agent
-   - `VITE_US_CUSTOMS_AGENT_THREAD_ID`: Thread ID for the US Customs Agent
-   - `VITE_US_CUSTOMS_AGENT_API_KEY`: API key for the US Customs Agent
+   - `REACT_APP_AZURE_OPENAI_ENDPOINT`: Your Azure OpenAI endpoint
+   - `REACT_APP_AZURE_OPENAI_KEY`: Your Azure OpenAI API key
+   - `REACT_APP_AZURE_OPENAI_API_VERSION`: API version (e.g., "2023-09-01-preview")
 
 4. Deploy your application
 
@@ -174,6 +185,13 @@ This chatbot is designed to provide information about US Customs rules and regul
 1. The information provided is for general guidance only
 2. Users should verify critical information with official US Customs and Border Protection resources
 3. The chatbot does not provide legal advice
+
+## Security and Data Privacy
+
+- Only the Azure ML Prompt Flow endpoint is called from the backend.
+- No user data is sent to any other external service.
+- API keys are stored securely in environment variables and never committed to source control.
+- The frontend does not require or store any sensitive credentials.
 
 ## Support and Maintenance
 
