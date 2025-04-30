@@ -1,5 +1,8 @@
 {
-  "rewrites": [{ "source": "/(.*)", "destination": "/index.html" }],
+  "rewrites": [
+    {"source": "/api/(.*)", "destination": "/api/$1"},
+    {"source": "/(.*)", "destination": "/index.html"}
+  ],
   "buildCommand": "cd src/frontend && npm install && npm run build",
   "outputDirectory": "src/frontend/dist",
   "installCommand": "cd src/frontend && npm install"
