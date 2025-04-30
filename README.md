@@ -139,6 +139,26 @@ This application can be deployed to various hosting platforms:
 
 1. **Azure Static Web Apps**: Recommended for seamless integration with Azure services
 2. **Azure App Service**: For applications requiring server-side functionality
+3. **Vercel**: For quick and easy deployment of the frontend application
+
+### Vercel Deployment Instructions
+
+To deploy this application to Vercel:
+
+1. Ensure you have the `vercel.json` configuration file in the root of your repository
+2. Connect your repository to Vercel
+3. Set the following environment variables in your Vercel project settings:
+   - `VITE_OPENAI_ENDPOINT`: Your Azure OpenAI endpoint
+   - `VITE_OPENAI_API_KEY`: Your Azure OpenAI API key
+   - `VITE_OPENAI_API_VERSION`: API version (e.g., "2023-09-01-preview")
+   - `VITE_US_CUSTOMS_AGENT_CONN_STR`: Connection string for US Customs Agent
+   - `VITE_US_CUSTOMS_AGENT_ID`: Assistant ID for the US Customs Agent
+   - `VITE_US_CUSTOMS_AGENT_THREAD_ID`: Thread ID for the US Customs Agent
+   - `VITE_US_CUSTOMS_AGENT_API_KEY`: API key for the US Customs Agent
+
+4. Deploy your application
+
+The `vercel.json` configuration file ensures that Vercel knows how to build and serve your application from the correct directory structure.
 3. **Netlify/Vercel**: For quick deployment with CI/CD pipelines
 
 ## Security Considerations
