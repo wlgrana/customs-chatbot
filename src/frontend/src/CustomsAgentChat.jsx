@@ -36,7 +36,7 @@ function CustomsAgentChat() {
   const [messages, setMessages] = useState([
     { 
       role: "assistant", 
-      content: "Welcome to First Brands Group Customs Assistant! I can help with questions about automotive parts import/export regulations, HTS codes, customs documentation, and more. How can I assist you today?",
+      content: "Welcome to First Brands Group Customs Agent! I can help with questions about automotive parts import/export regulations, HTS codes, customs documentation, and more. How can I assist you today?",
       timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
     }
   ]);
