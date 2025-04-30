@@ -5,6 +5,9 @@ const axios = require('axios');
 const endpoint = process.env.AZURE_PROMPT_FLOW_ENDPOINT || "https://us-customs-rules-vnvgf.eastus2.inference.ml.azure.com/score";
 const apiKey = process.env.AZURE_PROMPT_FLOW_API_KEY || "CEaudbB30Gj5ugzLgFNVPHuqchxZS1OKeGc9zKhdnBlq2SyeZvhQJQQJ99BDAAAAAAAAAAAAINFRAZML3GBK";
 
+// Debug info
+console.log("Using endpoint:", endpoint);
+
 module.exports = async (req, res) => {
   // Enable CORS
   res.setHeader('Access-Control-Allow-Credentials', true);
@@ -26,7 +29,11 @@ module.exports = async (req, res) => {
   }
 
   try {
-    const message = req.body.message;
+    console.log("Request body:", req.body);
+    
+    const message = req.body?.message;
+    
+    console.log("Extracted message:", message);
 
     if (!message) {
       return res.status(400).json({ error: 'Message is required' });
@@ -69,6 +76,16 @@ module.exports = async (req, res) => {
     }
   } catch (error) {
     console.error("Error calling customs API:", error);
+    console.error("Error details:", {
+      message: error.message,
+      stack: error.stack,
+      response: error.response ? {
+        status: error.response.status,
+        statusText: error.response.statusText,
+        data: error.response.data
+      } : 'No response data'
+    });
+    
     return res.status(500).json({
       kind: "customs_agent_result",
       result: null,
