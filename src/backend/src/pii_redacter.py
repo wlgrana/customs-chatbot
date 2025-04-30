@@ -1,4 +1,4 @@
-# Copyright (c) Microsoft Corporation.
+# Deprecated: This file is no longer used. All PII handling is managed by the Prompt Flow API integration.
 # Licensed under the MIT License.
 import os
 import logging

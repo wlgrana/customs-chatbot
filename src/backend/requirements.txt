@@ -1,8 +1,2 @@
 requests
 flask
-openai
-azure-identity
-azure-search-documents
-azure-ai-textanalytics
-azure-ai-language-conversations
-azure-ai-language-questionanswering

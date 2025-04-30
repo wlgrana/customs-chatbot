@@ -401,6 +401,7 @@ FodyWeavers.xsd
 # React / Frontend specific
 /build
 /dist
+src/frontend/dist/
 /.next
 .DS_Store
 .env.local
@@ -412,3 +413,6 @@ yarn-debug.log*
 yarn-error.log*
 .eslintcache
 .vercel
+
+# Environment files
+.env

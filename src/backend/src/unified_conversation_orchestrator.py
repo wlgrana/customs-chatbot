@@ -1,15 +1,5 @@
-# Copyright (c) Microsoft Corporation.
-# Licensed under the MIT License.
-import os
-import uuid
-from typing import Callable
-from azure.ai.textanalytics import TextAnalyticsClient
-from router.router_type import RouterType
-from router.router_utils import create_router
-from utils import get_azure_credential
+# Deprecated: This file is no longer used. All orchestration is handled by the Prompt Flow API integration.
 
-
-class UnifiedConversationOrchestrator():
     """
     Unified-Conversation-Orchestrator.
 

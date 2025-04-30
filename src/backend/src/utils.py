@@ -1,4 +1,4 @@
-# Copyright (c) Microsoft Corporation.
+# Deprecated: This file is no longer used. Utility functions are not needed with the Prompt Flow API integration.
 # Licensed under the MIT License.
 import os
 from azure.identity import DefaultAzureCredential, ManagedIdentityCredential
