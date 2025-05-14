@@ -234,7 +234,23 @@ module.exports = async (req, res) => {
 
       // Clean up any token objects in the response
       if (typeof outputText === 'string') {
-        // Handle token objects in the response
+        // Handle complex token objects with type, raw, depth, text, and tokens
+        outputText = outputText.replace(/\{"type":"heading","raw":"[^"]+","depth":\d+,"text":"([^"]+)","tokens":[^\}]+\}(?=\s|$)/g, (match) => {
+          try {
+            // Try to parse the JSON object
+            const obj = JSON.parse(match);
+            if (obj.text) {
+              // Return proper markdown heading based on depth
+              const hashes = '#'.repeat(obj.depth || 2);
+              return `${hashes} ${obj.text}`;
+            }
+          } catch (e) {
+            console.error('Error parsing complex heading object:', e);
+          }
+          return '';
+        });
+        
+        // Handle simpler token objects in the response
         outputText = outputText.replace(/\{"type":"heading"[^\}]*\}(?=\s|$)/g, (match) => {
           try {
             // Try to parse the JSON object
@@ -261,6 +277,9 @@ module.exports = async (req, res) => {
         
         // Ensure headings have proper format
         outputText = outputText.replace(/^(Step \d+:)/gm, '## $1');
+        
+        // Final cleanup of any remaining curly braces that might be part of incomplete JSON
+        outputText = outputText.replace(/\{"type":"[^"]+"[^\}]*(?=\s|$)/g, '');
         
         // Clean up any JSON-like content
         outputText = outputText.replace(/\{"[^\}]+\}/g, '');
