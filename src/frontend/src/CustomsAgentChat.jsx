@@ -35,70 +35,43 @@ function formatCrossRulings(rulings) {
     return "No specific CROSS rulings found.";
   }
   
-  // Create a more detailed HTML table instead of markdown
-  let formattedHtml = `
-  <div class="cross-rulings-container">
-    <table class="cross-rulings-table">
-      <thead>
-        <tr>
-          <th>DATE</th>
-          <th>
-            RULING<br/>
-            CATEGORY<br/>
-            TARIFF NO
-          </th>
-          <th>RULING REFERENCE</th>
-          <th>RELATED</th>
-        </tr>
-      </thead>
-      <tbody>
-  `;
+  // Use markdown table format instead of HTML for better compatibility
+  let formattedText = "";
+  
+  // Create a table header
+  formattedText += "| DATE | RULING CATEGORY & TARIFF NO | RULING REFERENCE | RELATED |\n";
+  formattedText += "|------|---------------------------|-----------------|---------|\n";
   
   // Add each ruling as a row
   rulings.forEach(ruling => {
     const rulingNumber = ruling.rulingNumber || "N/A";
     
-    // Format date as MM/DD/YYYY
+    // Format date in a more readable format
     let formattedDate = "N/A";
     if (ruling.rulingDate) {
       const date = new Date(ruling.rulingDate);
       formattedDate = `${(date.getMonth() + 1).toString().padStart(2, '0')}/${date.getDate().toString().padStart(2, '0')}/${date.getFullYear()}`;
     }
     
-    // Format HTS codes with links
-    let tariffLinks = "";
+    // Format HTS codes
+    let tariffs = "";
     if (ruling.tariffs && ruling.tariffs.length > 0) {
-      tariffLinks = ruling.tariffs.map(tariff => {
+      tariffs = ruling.tariffs.map(tariff => {
         // Remove any colons that might be in the tariff code
-        const cleanTariff = tariff.replace(/^:/, '');
-        return `<a href="https://hts.usitc.gov/?query=${cleanTariff}" target="_blank" class="tariff-link">${cleanTariff}</a>`;
-      }).join('<br/>');
+        return tariff.replace(/^:/, '');
+      }).join(', ');
     }
     
     // Extract subject
     const subject = ruling.subject || "N/A";
     
-    formattedHtml += `
-      <tr>
-        <td>${formattedDate}</td>
-        <td>
-          <a href="https://rulings.cbp.gov/ruling/${rulingNumber}" target="_blank" class="ruling-link">${rulingNumber}</a><br/>
-          ${ruling.categories || "Classification"}<br/>
-          ${tariffLinks}
-        </td>
-        <td>${subject}</td>
-        <td></td>
-      </tr>
-    `;
+    // Format the ruling category and tariff column
+    const rulingCategory = `[${rulingNumber}](https://rulings.cbp.gov/ruling/${rulingNumber})<br>${ruling.categories || "Classification"}<br>${tariffs}`;
+    
+    formattedText += `| ${formattedDate} | ${rulingCategory} | ${subject} | |\n`;
   });
   
-  formattedHtml += `
-      </tbody>
-    </table>
-  </div>
-  `;
-  
-  return formattedHtml;
+  return formattedText;
 }
 
 function CustomsAgentChat() {
