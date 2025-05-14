@@ -148,10 +148,10 @@ function CustomsAgentChat() {
       <div className="chat-header">
         <img src="/fbg-logo.png" alt="FBG Logo" className="header-logo" />
         <div className="header-text">
-          <h1>-First Brands Group Customs Agent</h1>
+          <h1>First Brands Group Customs Agent</h1>
           <p>Ask about automotive parts import/export regulations, HTS codes, and more.</p>
         </div>
-        <div className="chat-settings">
+        {/* <div className="chat-settings">
           <label className="source-toggle">
             <input
               type="checkbox"
@@ -160,7 +160,7 @@ function CustomsAgentChat() {
             />
             <span>Show Sources</span>
           </label>
-        </div>
+        </div> */}
       </div>
       <div className="chat-window" ref={chatWindowRef}>
         {messages

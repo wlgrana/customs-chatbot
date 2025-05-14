@@ -507,3 +507,144 @@ body {
 .toolbar-container {
   display: none !important;
 }
+
+/* Responsive Design - Media Queries */
+
+@media (max-width: 768px) {
+  .customs-chat-ui {
+    margin: 0;
+    border-radius: 0;
+    height: 100vh; /* Full viewport height */
+    max-height: 100vh;
+    border: none;
+    box-shadow: none;
+  }
+
+  .chat-header {
+    padding: 16px;
+    flex-direction: column; /* Stack items vertically */
+    text-align: center;
+  }
+
+  .chat-header::after {
+    height: 2px; /* Thinner accent line */
+  }
+
+  .header-logo {
+    height: 50px;
+    margin-right: 0;
+    margin-bottom: 10px;
+  }
+
+  .header-text h1 {
+    font-size: 20px; /* Smaller font for header */
+  }
+
+  .header-text p {
+    font-size: 12px; /* Smaller font for subtext */
+  }
+
+  .chat-settings {
+    position: static; /* Remove absolute positioning */
+    margin-top: 10px;
+    align-self: center;
+  }
+
+  .source-toggle {
+    font-size: 13px;
+    padding: 5px 10px;
+  }
+
+  .chat-window {
+    padding: 10px;
+    width: 100%;
+    max-height: calc(100vh - 180px); /* Adjust based on new header/input height */
+  }
+
+  .bubble-container {
+    max-width: 90%; /* Slightly more width for bubbles */
+  }
+
+  .agent-bubble-container {
+    max-width: 90%;
+  }
+  
+  .input-area {
+    padding: 10px;
+  }
+
+  .chat-input {
+    padding: 10px 14px;
+    font-size: 15px;
+  }
+
+  .send-button,
+  .stop-button {
+    padding: 10px 18px;
+    font-size: 15px;
+  }
+
+  .avatar {
+    min-width: 30px;
+    min-height: 30px;
+    width: 30px;
+    height: 30px;
+    font-size: 14px;
+  }
+
+  .avatar svg {
+    width: 18px;
+    height: 18px;
+  }
+
+  .agent-metadata {
+    margin-left: 42px; /* Adjust based on new avatar size */
+  }
+
+  .typing-indicator {
+    margin-left: 42px;
+  }
+}
+
+@media (max-width: 480px) {
+  .chat-header {
+    padding: 12px;
+  }
+
+  .header-logo {
+    height: 40px;
+  }
+
+  .header-text h1 {
+    font-size: 18px;
+  }
+
+  .header-text p {
+    font-size: 11px;
+  }
+
+  .chat-window {
+    max-height: calc(100vh - 170px); /* Further adjust */
+  }
+
+  .input-area {
+    flex-direction: column; /* Stack input and button */
+    gap: 8px;
+  }
+
+  .chat-input {
+    font-size: 14px;
+    width: 100%;
+  }
+
+  .send-button,
+  .stop-button {
+    width: 100%;
+    margin-left: 0; /* Remove margin when stacked */
+    padding: 12px;
+  }
+
+  .bubble {
+    font-size: 15px;
+  }
+}
