@@ -24,12 +24,15 @@ This guide explains the technical architecture, file structure, and end-to-end f
 - `CustomsAgentChat.jsx` – Core chat UI, handles user input, message state, and API calls
 - `ConnectionTest.jsx`/`CustomsAgentTest.jsx` – Utilities for testing API connectivity
 - `styles.css`, `App.css` – UI styling
+- `cross-rulings-styles.css` – Specific styling for CROSS rulings display in markdown format
 
-### Backend (`src/backend/src/`)
-- `server.py` – Flask app exposing `/api/customs/ask` endpoint
-- `router/customs_router.py` – Forwards user questions to Azure ML Prompt Flow API, integrates CROSS ruling data for classification questions.
-- `utils.py`, other `router/*.py` – Utilities and legacy/alternate routing (not used in default flow)
-- `scraper.py` – Fetches U.S. Customs CROSS rulings via the official JSON API.
+### Backend
+- `api/customs/ask.js` – Serverless function exposing `/api/customs/ask` endpoint for Vercel deployment
+- `src/backend/src/server.py` – Flask app for local development
+- `src/backend/src/router/customs_router.py` – Legacy router for local development
+- `src/backend/src/utils.py`, other `router/*.py` – Utilities and legacy routing
+- `src/backend/src/scraper.py` – Fetches U.S. Customs CROSS rulings via the official JSON API
+- `prompt_flow_update.md` – Contains the updated prompt instructions for Azure Prompt Flow
 
 ---
 
@@ -37,24 +40,23 @@ This guide explains the technical architecture, file structure, and end-to-end f
 
 Here's a step-by-step overview of how a user query is processed:
 
-1.  **User Input (Frontend):** The user types a message into the chatbot interface (`frontend/index.html`).
-2.  **API Request (Frontend):** JavaScript (`frontend/scripts.js`) captures the message and sends a POST request to the backend API endpoint (`/api/customs/ask`).
-3.  **Request Reception (Backend):** The Flask application (`backend/src/server.py`) receives the request at the `/api/customs/ask` route.
-4.  **Routing (Backend):** The request handler calls the `customs_router` function in `backend/src/router/customs_router.py`.
-5.  **Classification Check (Backend):** The `customs_router` analyzes the message using `is_classification_question()`.
+1.  **User Input (Frontend):** The user types a message into the chat interface (`CustomsAgentChat.jsx`).
+2.  **API Request (Frontend):** React captures the message and sends a POST request to the serverless function endpoint (`/api/customs/ask`).
+3.  **Request Reception (Backend):** The serverless function (`api/customs/ask.js`) receives the request.
+4.  **Classification Check (Backend):** The serverless function analyzes the message to determine if it's a classification question.
     *   **If Classification Question:**
-        *   The `extract_search_term()` function attempts to pull out the item name.
-        *   If a term is found, the `search_cross_rulings()` function in `backend/src/scraper.py` is called.
-        *   `scraper.py` queries the official CBP CROSS JSON API, retrieves relevant ruling data, and returns key information (number, date, subject, tariffs).
-        *   `format_cross_rulings_for_context()` prepares this data as text context.
+        *   The function extracts the search term from the message.
+        *   If a term is found, the function queries the CROSS API directly.
+        *   The API returns relevant ruling data (number, date, subject, tariffs).
+        *   The function formats this data as a markdown table directly in the question.
     *   **If Not Classification Question:** The CROSS data retrieval step is skipped.
-6.  **Azure Prompt Flow Payload (Backend):** The `customs_router` prepares a JSON payload containing the original user `question` and any `contexts` (formatted CROSS ruling data, if applicable). Credentials (`AZURE_PROMPT_FLOW_ENDPOINT`, `AZURE_PROMPT_FLOW_API_KEY`) are loaded from the `.env` file.
-7.  **Azure Prompt Flow Call (Backend):** An HTTPS POST request is made to the configured Azure Prompt Flow endpoint with the payload and authentication headers.
-8.  **AI Processing (Azure):** The Azure Prompt Flow executes its defined logic (likely involving a Large Language Model) using the provided question and context.
-9.  **Response Reception (Backend):** The `customs_router` receives the JSON response from Azure.
-10. **Result Extraction (Backend):** The relevant answer text is extracted from the Azure response (e.g., from the "output" or "answer" field).
-11. **API Response (Backend):** The Flask server sends the extracted answer back to the frontend in a JSON response.
-12. **Display Result (Frontend):** JavaScript receives the response and displays the chatbot's answer in the chat interface.
+5.  **Azure Prompt Flow Payload (Backend):** The serverless function prepares a JSON payload containing the user question (with CROSS rulings included in the question itself) and any additional contexts. Credentials are loaded from environment variables.
+6.  **Azure Prompt Flow Call (Backend):** An HTTPS POST request is made to the Azure Prompt Flow endpoint with the payload and authentication headers.
+7.  **AI Processing (Azure):** The Azure Prompt Flow executes its logic using the provided question (which now includes the CROSS rulings table).
+8.  **Response Reception (Backend):** The serverless function receives the JSON response from Azure.
+9.  **Result Extraction (Backend):** The answer text is extracted from the Azure response.
+10. **API Response (Backend):** The serverless function sends the extracted answer and CROSS rulings data back to the frontend in a JSON response.
+11. **Display Result (Frontend):** React receives the response and displays the chatbot's answer in the chat interface, with CROSS rulings formatted as a markdown table.
 
 ---
 
@@ -64,15 +66,24 @@ Here's a step-by-step overview of how a user query is processed:
 - **CustomsAgentChat.jsx**
   - `sendMessage()` – Handles input, calls backend, updates UI
   - Uses `axios.post('/api/customs/ask', { message })`
+  - Renders markdown content including headings and tables
+  - No longer displays CROSS rulings as a separate message
+- **cross-rulings-styles.css**
+  - Provides styling for markdown tables and headings
 - **vite.config.js**
   - Sets up proxy for `/api` routes
 
 ### Backend
 - **server.py**
   - `ask_customs()` – Flask route handler for `/api/customs/ask`
-- **router/customs_router.py**
-  - `customs_router(message)` – Sends request to Azure ML, returns result
-  - `is_classification_question()`, `extract_search_term()`, `format_cross_rulings_for_context()` – Functions for CROSS ruling integration
+- **api/customs/ask.js**
+  - Serverless function that handles requests
+  - Queries CROSS API directly
+  - Formats CROSS rulings as a markdown table in the question
+  - Sends request to Azure ML, returns result
+- **prompt_flow_update.md**
+  - Contains updated instructions for Azure Prompt Flow
+  - Specifies formatting for headings and CROSS rulings
 - **scraper.py**
   - `search_cross_rulings(term, page_size)` – Queries the official U.S. Customs CROSS JSON API for rulings related to the search term.
 
@@ -135,16 +146,21 @@ The `customs_router.py` module uses the `python-dotenv` library to load these va
 
 #### CROSS Ruling Integration (for HTS Classification Questions)
 
-To enhance responses for HTS classification queries, the backend now includes a step to query the official U.S. Customs CROSS JSON API:
+To enhance responses for HTS classification queries, the serverless function now includes a step to query the official U.S. Customs CROSS JSON API:
 
-1.  **Question Detection:** When a message is received by `customs_router` in `src/backend/src/router/customs_router.py`, the `is_classification_question()` function checks if it contains keywords related to HTS classification (e.g., "hts", "classify", "tariff code").
-2.  **Search Term Extraction:** If detected as a classification question, the `extract_search_term()` function attempts to identify the specific item mentioned (e.g., "led lamp").
-3.  **API Query:** If a search term is found, the `customs_router` calls the `search_cross_rulings()` function located in `src/backend/src/scraper.py`.
-4.  **`scraper.py`:** This module contains the `search_cross_rulings(term, page_size)` function. It constructs a query URL for the official CBP CROSS JSON API (`https://rulings.cbp.gov/api/search`), sends an HTTP GET request using `requests`, and parses the resulting JSON data to extract ruling numbers, dates, subjects, tariff codes, and other relevant details for the matching rulings (defaulting to a page size of 10).
-5.  **Context Formatting:** Back in `customs_router.py`, the `format_cross_rulings_for_context()` function takes the list of dictionaries returned by the scraper and formats it into a clean text block.
-6.  **Payload Enhancement:** This formatted text block containing CROSS ruling summaries is added to the `contexts` field of the JSON payload sent to the Azure Prompt Flow endpoint.
-7.  **Azure Prompt Flow Call:** The request is then sent to Azure Prompt Flow as usual, but now with the added context from the CROSS rulings.
-8.  **Response Handling:** The response from Azure Prompt Flow is processed and returned to the frontend.
+1.  **Question Detection:** When a message is received by the serverless function (`api/customs/ask.js`), it checks if the message contains keywords related to HTS classification.
+2.  **Search Term Extraction:** If detected as a classification question, the function extracts the search term from the message.
+3.  **API Query:** If a search term is found, the function queries the CROSS API directly using axios.
+4.  **Data Processing:** The function processes the API response to extract ruling numbers, dates, subjects, tariff codes, and other relevant details.
+5.  **Markdown Formatting:** The function formats the CROSS rulings as a markdown table directly in the question sent to Azure Prompt Flow. The table follows this format:
+   ```
+   | DATE | RULING CATEGORY & TARIFF NO | RULING REFERENCE | RELATED |
+   |------|---------------------------|-----------------|---------|  
+   | 02/19/2014 | [N249681](https://rulings.cbp.gov/ruling/N249681)<br>Classification<br>8413.30.9030 | The tariff classification of fuel pumps from Germany. | |
+   ```
+6.  **Prompt Flow Instructions:** The Azure Prompt Flow is instructed to use the exact CROSS rulings provided in the question and format them in the same way in its response.
+7.  **Frontend Display:** The frontend now renders the CROSS rulings as part of the main AI response using markdown, with proper styling for tables and headings.
+8.  **Response Structure:** The AI response is now formatted with clear section headings (H2) for Product Analysis, HTS Classification Logic, CROSS Rulings Analysis, etc.
 
 This integration allows the AI model in Azure Prompt Flow to consider relevant official rulings when generating answers to classification questions, improving accuracy and detail.
 
