@@ -83,12 +83,51 @@ function CustomsAgentChat() {
     signal: controller.signal
   }
 );
-      const reply = response.data.result || "No response.";
-      const now = new Date();
-      const timestamp = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-      setMessages((msgs) => [...msgs, { role: "assistant", content: reply, raw: reply, timestamp }]);
+      const backendResponse = response.data;
+      const replyTimestamp = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+      if (backendResponse.kind === "customs_agent_screenshot_result" && backendResponse.image_url) {
+        setMessages((msgs) => [...msgs, {
+          role: "assistant",
+          kind: backendResponse.kind,
+          content: backendResponse.message || "Please see the screenshot below.",
+          imageUrl: backendResponse.image_url,
+          searchUrlUsed: backendResponse.search_url_used,
+          timestamp: replyTimestamp
+        }]);
+      } else if (backendResponse.result) { // Handles existing text results or new text_result kind
+        setMessages((msgs) => [...msgs, {
+          role: "assistant",
+          kind: backendResponse.kind || "customs_agent_text_result",
+          content: backendResponse.result,
+          raw: backendResponse.result, // Keep for consistency if used elsewhere
+          timestamp: replyTimestamp
+        }]);
+      } else if (backendResponse.error) {
+        setMessages((msgs) => [...msgs, {
+          role: "assistant",
+          kind: "error",
+          content: `Error: ${backendResponse.error}`,
+          raw: `Error: ${backendResponse.error}`, // Keep for consistency
+          timestamp: replyTimestamp
+        }]);
+      } else {
+        setMessages((msgs) => [...msgs, {
+          role: "assistant",
+          kind: "unknown_response",
+          content: "No recognized response received from the agent.",
+          raw: "No recognized response received from the agent.",
+          timestamp: replyTimestamp
+        }]);
+      }
     } catch (err) {
-      setMessages((msgs) => [...msgs, { role: "assistant", content: "Sorry, there was an error contacting the US Customs Agent." }]);
+      if (axios.isCancel(err)) {
+        console.log('Request canceled:', err.message);
+        // Optionally, add a message to UI indicating cancellation
+        // setMessages((msgs) => [...msgs, { role: "assistant", content: "Request stopped by user." }]);
+      } else {
+        setMessages((msgs) => [...msgs, { role: "assistant", content: "Sorry, there was an error contacting the US Customs Agent." }]);
+      }
     } finally {
       setLoading(false);
       setInput("");
@@ -109,7 +148,7 @@ function CustomsAgentChat() {
       <div className="chat-header">
         <img src="/fbg-logo.png" alt="FBG Logo" className="header-logo" />
         <div className="header-text">
-          <h1>First Brands Group Customs Agent</h1>
+          <h1>-First Brands Group Customs Agent</h1>
           <p>Ask about automotive parts import/export regulations, HTS codes, and more.</p>
         </div>
         <div className="chat-settings">
@@ -149,7 +188,23 @@ function CustomsAgentChat() {
                   <div className={`bubble-inner ${isUser ? 'user-bubble-inner' : 'agent-bubble-inner'}`}>
                     <div className={`bubble ${isUser ? 'user-bubble' : 'agent-bubble'}`}>
                       {isAgent ? (
-                        <span dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(marked.parse(msg.content)) }} />
+                        msg.kind === "customs_agent_screenshot_result" && msg.imageUrl ? (
+                          <>
+                            <span dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(marked.parse(msg.content || "")) }} />
+                            <img 
+                              src={msg.imageUrl} 
+                              alt="CROSS Search Result Screenshot" 
+                              style={{ maxWidth: '100%', maxHeight: '400px', marginTop: '10px', border: '1px solid #ddd', borderRadius: '4px' }}
+                            />
+                            {msg.searchUrlUsed && (
+                              <p style={{fontSize: '0.8em', color: '#777', marginTop: '5px', wordBreak: 'break-all'}}>
+                                Source URL: <a href={msg.searchUrlUsed} target="_blank" rel="noopener noreferrer">{msg.searchUrlUsed}</a>
+                              </p>
+                            )}
+                          </>
+                        ) : (
+                          <span dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(marked.parse(msg.content || "")) }} />
+                        )
                       ) : (
                         <span>{msg.displayContent || msg.content}</span>
                       )}

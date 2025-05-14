@@ -27,9 +27,9 @@ This guide explains the technical architecture, file structure, and end-to-end f
 
 ### Backend (`src/backend/src/`)
 - `server.py` – Flask app exposing `/api/customs/ask` endpoint
-- `router/customs_router.py` – Forwards user questions to Azure ML Prompt Flow API
+- `router/customs_router.py` – Forwards user questions to Azure ML Prompt Flow API, integrates CROSS ruling data for classification questions.
 - `utils.py`, other `router/*.py` – Utilities and legacy/alternate routing (not used in default flow)
-- `scraper.py` – New module for scraping U.S. Customs CROSS rulings
+- `scraper.py` – Fetches U.S. Customs CROSS rulings via the official JSON API.
 
 ---
 
@@ -44,11 +44,11 @@ Here's a step-by-step overview of how a user query is processed:
 5.  **Classification Check (Backend):** The `customs_router` analyzes the message using `is_classification_question()`.
     *   **If Classification Question:**
         *   The `extract_search_term()` function attempts to pull out the item name.
-        *   If a term is found, the `get_cross_rulings()` function in `backend/src/scraper.py` is called.
-        *   `scraper.py` fetches data from the CBP CROSS website, parses it, and returns relevant ruling summaries.
-        *   `format_cross_rulings()` prepares this data as text context.
-    *   **If Not Classification Question:** The CROSS scraping step is skipped.
-6.  **Azure Prompt Flow Payload (Backend):** The `customs_router` prepares a JSON payload containing the original user `question` and any scraped `contexts` (from CROSS rulings, if applicable). Credentials (`AZURE_PROMPT_FLOW_ENDPOINT`, `AZURE_PROMPT_FLOW_API_KEY`) are loaded from the `.env` file.
+        *   If a term is found, the `search_cross_rulings()` function in `backend/src/scraper.py` is called.
+        *   `scraper.py` queries the official CBP CROSS JSON API, retrieves relevant ruling data, and returns key information (number, date, subject, tariffs).
+        *   `format_cross_rulings_for_context()` prepares this data as text context.
+    *   **If Not Classification Question:** The CROSS data retrieval step is skipped.
+6.  **Azure Prompt Flow Payload (Backend):** The `customs_router` prepares a JSON payload containing the original user `question` and any `contexts` (formatted CROSS ruling data, if applicable). Credentials (`AZURE_PROMPT_FLOW_ENDPOINT`, `AZURE_PROMPT_FLOW_API_KEY`) are loaded from the `.env` file.
 7.  **Azure Prompt Flow Call (Backend):** An HTTPS POST request is made to the configured Azure Prompt Flow endpoint with the payload and authentication headers.
 8.  **AI Processing (Azure):** The Azure Prompt Flow executes its defined logic (likely involving a Large Language Model) using the provided question and context.
 9.  **Response Reception (Backend):** The `customs_router` receives the JSON response from Azure.
@@ -72,9 +72,9 @@ Here's a step-by-step overview of how a user query is processed:
   - `ask_customs()` – Flask route handler for `/api/customs/ask`
 - **router/customs_router.py**
   - `customs_router(message)` – Sends request to Azure ML, returns result
-  - `is_classification_question()`, `extract_search_term()`, `format_cross_rulings()` – New functions for CROSS ruling integration
+  - `is_classification_question()`, `extract_search_term()`, `format_cross_rulings_for_context()` – Functions for CROSS ruling integration
 - **scraper.py**
-  - `get_cross_rulings(search_term, max_rulings)` – Scrapes U.S. Customs CROSS rulings
+  - `search_cross_rulings(term, page_size)` – Queries the official U.S. Customs CROSS JSON API for rulings related to the search term.
 
 ---
 
@@ -105,9 +105,8 @@ Here's a step-by-step overview of how a user query is processed:
 The backend relies on several Python packages. Key dependencies include:
 
 *   **Flask**: For the web server framework.
-*   **requests**: For making HTTP calls to Azure Prompt Flow and the CROSS rulings website.
+*   **requests**: For making HTTP calls to Azure Prompt Flow and the CROSS JSON API.
 *   **python-dotenv**: For loading environment variables from the `.env` file.
-*   **beautifulsoup4**: For parsing HTML content scraped from the CROSS rulings website.
 
 Ensure all dependencies are installed using:
 ```bash
@@ -136,13 +135,13 @@ The `customs_router.py` module uses the `python-dotenv` library to load these va
 
 #### CROSS Ruling Integration (for HTS Classification Questions)
 
-To enhance responses for HTS classification queries, the backend now includes a step to scrape relevant U.S. Customs CROSS rulings:
+To enhance responses for HTS classification queries, the backend now includes a step to query the official U.S. Customs CROSS JSON API:
 
 1.  **Question Detection:** When a message is received by `customs_router` in `src/backend/src/router/customs_router.py`, the `is_classification_question()` function checks if it contains keywords related to HTS classification (e.g., "hts", "classify", "tariff code").
 2.  **Search Term Extraction:** If detected as a classification question, the `extract_search_term()` function attempts to identify the specific item mentioned (e.g., "led lamp").
-3.  **Web Scraping:** If a search term is found, the `customs_router` calls the `get_cross_rulings()` function located in the new `src/backend/src/scraper.py` module.
-4.  **`scraper.py`:** This module contains the `get_cross_rulings(search_term, max_rulings)` function. It constructs a search URL for the official CBP CROSS database, sends an HTTP GET request, and parses the resulting HTML using `requests` and `BeautifulSoup` to extract ruling numbers, dates, URLs, and text snippets for the top matching rulings (defaulting to 3).
-5.  **Context Formatting:** Back in `customs_router.py`, the `format_cross_rulings()` function takes the list of dictionaries returned by the scraper and formats it into a clean text block.
+3.  **API Query:** If a search term is found, the `customs_router` calls the `search_cross_rulings()` function located in `src/backend/src/scraper.py`.
+4.  **`scraper.py`:** This module contains the `search_cross_rulings(term, page_size)` function. It constructs a query URL for the official CBP CROSS JSON API (`https://rulings.cbp.gov/api/search`), sends an HTTP GET request using `requests`, and parses the resulting JSON data to extract ruling numbers, dates, subjects, tariff codes, and other relevant details for the matching rulings (defaulting to a page size of 10).
+5.  **Context Formatting:** Back in `customs_router.py`, the `format_cross_rulings_for_context()` function takes the list of dictionaries returned by the scraper and formats it into a clean text block.
 6.  **Payload Enhancement:** This formatted text block containing CROSS ruling summaries is added to the `contexts` field of the JSON payload sent to the Azure Prompt Flow endpoint.
 7.  **Azure Prompt Flow Call:** The request is then sent to Azure Prompt Flow as usual, but now with the added context from the CROSS rulings.
 8.  **Response Handling:** The response from Azure Prompt Flow is processed and returned to the frontend.

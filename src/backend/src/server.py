@@ -1,7 +1,7 @@
 from flask import Flask, request, jsonify
 from router.customs_router import customs_router
 
-app = Flask(__name__)
+app = Flask(__name__, static_folder='../static')
 
 @app.route("/api/customs/ask", methods=["POST"])
 def ask_customs():
