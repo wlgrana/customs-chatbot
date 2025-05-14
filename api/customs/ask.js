@@ -90,33 +90,43 @@ function formatCrossRulingsForContext(rulings, maxToFormat = 3) {
     return "No specific CROSS rulings found.";
   }
   
-  const formattedList = ["Relevant U.S. Customs CROSS Rulings:"];
+  // Format as a markdown table specifically for the Prompt Flow to recognize and use directly
+  let formattedText = "CROSS_RULINGS_DATA_START\n";
+  formattedText += "| Ruling # | Date | HTS | Country | URL |\n";
+  formattedText += "|---------|------|-----|---------|-----|\n";
+  
   for (let i = 0; i < Math.min(rulings.length, maxToFormat); i++) {
     const ruling = rulings[i];
-    const parts = [`  Ruling ${i+1}:`];
+    const rulingNumber = ruling.rulingNumber || "N/A";
     
-    if (ruling.rulingNumber) {
-      parts.push(`    Number: ${ruling.rulingNumber}`);
-    }
+    // Format date as MM/DD/YYYY
+    let formattedDate = "N/A";
     if (ruling.rulingDate) {
-      parts.push(`    Date: ${ruling.rulingDate}`);
-    }
-    if (ruling.subject) {
-      parts.push(`    Subject: ${ruling.subject}`);
-    }
-    if (ruling.tariffs && Array.isArray(ruling.tariffs) && ruling.tariffs.length > 0) {
-      parts.push(`    Tariffs: ${ruling.tariffs.join(', ')}`);
-    }
-    if (ruling.url) {
-      parts.push(`    URL: ${ruling.url}`);
+      const date = new Date(ruling.rulingDate);
+      formattedDate = `${(date.getMonth() + 1).toString().padStart(2, '0')}/${date.getDate().toString().padStart(2, '0')}/${date.getFullYear()}`;
     }
     
-    formattedList.push(parts.join('\n'));
+    // Format HTS codes
+    const hts = ruling.tariffs && ruling.tariffs.length > 0 ? ruling.tariffs.join(', ') : "N/A";
+    
+    // Extract country from subject if possible
+    let country = "N/A";
+    if (ruling.subject) {
+      const countryMatch = ruling.subject.match(/from\s+([\w\s]+)(?:\.|$)/i);
+      if (countryMatch && countryMatch[1]) {
+        country = countryMatch[1].trim();
+      }
+    }
+    
+    // Create URL column with the ruling number as the value
+    const url = rulingNumber;
+    
+    formattedText += `| ${rulingNumber} | ${formattedDate} | ${hts} | ${country} | ${url} |\n`;
   }
   
-  return formattedList.length > 1 ? 
-    formattedList.join('\n') : 
-    "No specific CROSS rulings found or able to be formatted.";
+  formattedText += "CROSS_RULINGS_DATA_END";
+  
+  return formattedText;
 }
 
 module.exports = async (req, res) => {
