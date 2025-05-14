@@ -29,6 +29,44 @@ const endpoint = import.meta.env.VITE_OPENAI_ENDPOINT;
 const apiKey = import.meta.env.VITE_OPENAI_API_KEY;
 const apiVersion = import.meta.env.VITE_OPENAI_API_VERSION;
 
+// Function to format CROSS rulings for display
+function formatCrossRulings(rulings) {
+  if (!rulings || rulings.length === 0) {
+    return "No specific CROSS rulings found.";
+  }
+  
+  let formattedText = "";
+  
+  // Create a table header
+  formattedText += "| Ruling # | Date | HTS | Country | Subject |\n";
+  formattedText += "|---------|------|-----|---------|---------|\n";
+  
+  // Add each ruling as a row
+  rulings.forEach(ruling => {
+    const rulingNumber = ruling.rulingNumber || "N/A";
+    const date = ruling.rulingDate ? new Date(ruling.rulingDate).toLocaleDateString() : "N/A";
+    const hts = ruling.tariffs && ruling.tariffs.length > 0 ? ruling.tariffs.join(", ") : "N/A";
+    
+    // Extract country from subject if possible
+    let country = "N/A";
+    if (ruling.subject) {
+      const countryMatch = ruling.subject.match(/from\s+([\w\s]+)(?:\.|$)/i);
+      if (countryMatch && countryMatch[1]) {
+        country = countryMatch[1].trim();
+      }
+    }
+    
+    // Truncate subject if too long
+    const subject = ruling.subject ? 
+      (ruling.subject.length > 50 ? ruling.subject.substring(0, 47) + "..." : ruling.subject) : 
+      "N/A";
+    
+    formattedText += `| ${rulingNumber} | ${date} | ${hts} | ${country} | ${subject} |\n`;
+  });
+  
+  return formattedText;
+}
+
 function CustomsAgentChat() {
   const [showSources, setShowSources] = useState(true);
 
@@ -96,19 +134,47 @@ function CustomsAgentChat() {
           timestamp: replyTimestamp
         }]);
       } else if (backendResponse.result) { // Handles existing text results or new text_result kind
-        setMessages((msgs) => [...msgs, {
-          role: "assistant",
-          kind: backendResponse.kind || "customs_agent_text_result",
-          content: backendResponse.result,
-          raw: backendResponse.result, // Keep for consistency if used elsewhere
-          timestamp: replyTimestamp
-        }]);
+        // If we have CROSS rulings, display them first
+        if (backendResponse.cross_rulings && backendResponse.cross_rulings.length > 0) {
+          // Format the CROSS rulings into a readable format
+          const formattedRulings = formatCrossRulings(backendResponse.cross_rulings);
+          
+          // Add the CROSS rulings as a separate message
+          setMessages((msgs) => [...msgs, {
+            role: "assistant",
+            kind: "cross_rulings_info",
+            content: "I found the following U.S. Customs CROSS rulings that may be relevant:",
+            crossRulings: backendResponse.cross_rulings,
+            formattedRulings: formattedRulings,
+            timestamp: replyTimestamp
+          }]);
+          
+          // Small delay before showing AI response
+          setTimeout(() => {
+            setMessages((msgs) => [...msgs, {
+              role: "assistant",
+              kind: backendResponse.kind || "customs_agent_text_result",
+              content: backendResponse.result,
+              raw: backendResponse.result,
+              timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+            }]);
+          }, 500);
+        } else {
+          // No CROSS rulings, just show the AI response
+          setMessages((msgs) => [...msgs, {
+            role: "assistant",
+            kind: backendResponse.kind || "customs_agent_text_result",
+            content: backendResponse.result,
+            raw: backendResponse.result,
+            timestamp: replyTimestamp
+          }]);
+        }
       } else if (backendResponse.error) {
         setMessages((msgs) => [...msgs, {
           role: "assistant",
           kind: "error",
           content: `Error: ${backendResponse.error}`,
-          raw: `Error: ${backendResponse.error}`, // Keep for consistency
+          raw: `Error: ${backendResponse.error}`,
           timestamp: replyTimestamp
         }]);
       } else {
@@ -201,6 +267,18 @@ function CustomsAgentChat() {
                                 Source URL: <a href={msg.searchUrlUsed} target="_blank" rel="noopener noreferrer">{msg.searchUrlUsed}</a>
                               </p>
                             )}
+                          </>
+                        ) : msg.kind === "cross_rulings_info" && msg.formattedRulings ? (
+                          <>
+                            <div className="cross-rulings-header" style={{ marginBottom: '10px', fontWeight: 'bold', color: '#2c3e50' }}>
+                              <span dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(marked.parse(msg.content || "")) }} />
+                            </div>
+                            <div className="cross-rulings-table" style={{ backgroundColor: '#f8f9fa', padding: '10px', borderRadius: '4px', border: '1px solid #e9ecef' }}>
+                              <span dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(marked.parse(msg.formattedRulings || "")) }} />
+                            </div>
+                            <p style={{fontSize: '0.8em', color: '#777', marginTop: '5px'}}>
+                              Source: <a href="https://rulings.cbp.gov/" target="_blank" rel="noopener noreferrer">U.S. Customs and Border Protection CROSS</a>
+                            </p>
                           </>
                         ) : (
                           <span dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(marked.parse(msg.content || "")) }} />
