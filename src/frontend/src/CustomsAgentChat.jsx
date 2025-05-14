@@ -1,8 +1,9 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import axios from "axios";
 import { marked } from "marked";
 import DOMPurify from "dompurify";
 import "./styles.css";
+import "./cross-rulings-styles.css";
 // SECURITY: Always sanitize markdown output before using dangerouslySetInnerHTML!
 
 function CopyIcon({ text }) {
@@ -28,6 +29,14 @@ function CopyIcon({ text }) {
 const endpoint = import.meta.env.VITE_OPENAI_ENDPOINT;
 const apiKey = import.meta.env.VITE_OPENAI_API_KEY;
 const apiVersion = import.meta.env.VITE_OPENAI_API_VERSION;
+
+// Configure marked to properly handle headings
+marked.setOptions({
+  headerIds: true,
+  mangle: false,
+  breaks: true,
+  gfm: true
+});
 
 // Function to format CROSS rulings for display in a format similar to the CBP website
 function formatCrossRulings(rulings) {
@@ -288,10 +297,12 @@ function CustomsAgentChat() {
                             </p>
                           </>
                         ) : (
-                          <span dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(marked.parse(msg.content || ""), {
-                            ADD_TAGS: ['h2', 'h3'],
-                            ADD_ATTR: ['target', 'rel']
-                          }) }} />
+                          <div className="markdown-content">
+                            <div dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(marked.parse(msg.content || ""), {
+                              ADD_TAGS: ['h2', 'h3'],
+                              ADD_ATTR: ['target', 'rel', 'id', 'class']
+                            }) }} />
+                          </div>
                         )
                       ) : (
                         <span>{msg.displayContent || msg.content}</span>

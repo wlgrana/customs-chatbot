@@ -1,7 +1,8 @@
 /* CROSS Rulings Table Styles for Markdown Tables */
 
-/* Style headings in the agent bubble */
-.agent-bubble h2 {
+/* Style headings in the agent bubble and markdown content */
+.agent-bubble h2,
+.markdown-content h2 {
   color: #2c3e50;
   font-size: 1.4em;
   margin-top: 20px;
@@ -9,14 +10,23 @@
   padding-bottom: 5px;
   border-bottom: 1px solid #eee;
   font-weight: 600;
+  display: block;
 }
 
-.agent-bubble h3 {
+.agent-bubble h3,
+.markdown-content h3 {
   color: #34495e;
   font-size: 1.2em;
   margin-top: 15px;
   margin-bottom: 8px;
   font-weight: 600;
+  display: block;
+}
+
+/* Ensure markdown content has proper spacing */
+.markdown-content {
+  display: block;
+  width: 100%;
 }
 
 /* Style the markdown tables in the agent bubble */
