@@ -234,8 +234,11 @@ module.exports = async (req, res) => {
 
       // Clean up any token objects in the response
       if (typeof outputText === 'string') {
-        // Handle complex token objects with type, raw, depth, text, and tokens
-        outputText = outputText.replace(/\{"type":"heading","raw":"[^"]+","depth":\d+,"text":"([^"]+)","tokens":[^\}]+\}(?=\s|$)/g, (match) => {
+        // First, directly replace the specific JSON pattern seen in the screenshot
+        outputText = outputText.replace(/\{"type":"heading","raw":"##\s+([^"]+)\\n","depth":\d+,"text":"([^"]+)","tokens":[^\}]+\}\}/g, '## $2');
+        
+        // Handle complete heading objects with tokens array
+        outputText = outputText.replace(/\{"type":"heading","raw":"[^"]+","depth":(\d+),"text":"([^"]+)","tokens":[^\}]+\}/g, (match) => {
           try {
             // Try to parse the JSON object
             const obj = JSON.parse(match);

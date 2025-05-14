@@ -338,8 +338,11 @@ function CustomsAgentChat() {
                               // Clean up the content
                               let cleanContent = msg.content || "";
                               
-                              // Handle complex token objects with type, raw, depth, text, and tokens
-                              cleanContent = cleanContent.replace(/\{"type":"heading","raw":"[^"]+","depth":\d+,"text":"([^"]+)","tokens":[^\}]+\}(?=\s|$)/g, (match) => {
+                              // First, directly replace the specific JSON pattern seen in the screenshot
+                              cleanContent = cleanContent.replace(/\{"type":"heading","raw":"##\s+([^"]+)\\n","depth":\d+,"text":"([^"]+)","tokens":[^\}]+\}\}/g, '## $2');
+                              
+                              // Handle complete heading objects with tokens array
+                              cleanContent = cleanContent.replace(/\{"type":"heading","raw":"[^"]+","depth":(\d+),"text":"([^"]+)","tokens":[^\}]+\}/g, (match) => {
                                 try {
                                   // Try to parse the JSON object
                                   const obj = JSON.parse(match);
@@ -350,6 +353,26 @@ function CustomsAgentChat() {
                                   }
                                 } catch (e) {
                                   console.error('Error parsing complex heading object:', e);
+                                }
+                                return '';
+                              });
+                              
+                              // Also handle JSON objects missing the closing brace
+                              cleanContent = cleanContent.replace(/\{"type":"heading","raw":"[^"]+","depth":(\d+),"text":"([^"]+)","tokens":[^\}]+(?=\s|$)/g, (match) => {
+                                try {
+                                  // Add closing brace and try to parse
+                                  const fixedMatch = match + '}';
+                                  const obj = JSON.parse(fixedMatch);
+                                  if (obj.text) {
+                                    const hashes = '#'.repeat(obj.depth || 2);
+                                    return `${hashes} ${obj.text}`;
+                                  }
+                                } catch (e) {
+                                  // If parsing fails, just extract the text part using regex
+                                  const textMatch = match.match(/"text":"([^"]+)"/); 
+                                  if (textMatch && textMatch[1]) {
+                                    return `## ${textMatch[1]}`;
+                                  }
                                 }
                                 return '';
                               });
