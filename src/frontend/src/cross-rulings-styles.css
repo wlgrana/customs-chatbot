@@ -38,6 +38,7 @@
   border: 1px solid #ddd;
   text-transform: uppercase;
   font-size: 12px;
+  white-space: nowrap;
 }
 
 .agent-bubble td {

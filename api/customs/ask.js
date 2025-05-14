@@ -157,8 +157,17 @@ module.exports = async (req, res) => {
     if (crossRulings && crossRulings.length > 0) {
       // Format the rulings to match the frontend display
       let rulingsTable = "\n\nCROSS Rulings:\n\n";
-      rulingsTable += "| DATE | RULING CATEGORY & TARIFF NO | RULING REFERENCE | RELATED |\n";
-      rulingsTable += "|------|---------------------------|-----------------|---------|\n";
+      
+      // Check if any rulings have related data
+      const hasRelatedData = crossRulings.some(ruling => ruling.related && ruling.related.trim() !== "");
+      
+      if (hasRelatedData) {
+        rulingsTable += "| DATE | RULING CATEGORY & TARIFF NO | RULING REFERENCE | RELATED |\n";
+        rulingsTable += "|------|---------------------------|-----------------|---------|\n";
+      } else {
+        rulingsTable += "| DATE | RULING CATEGORY & TARIFF NO | RULING REFERENCE |\n";
+        rulingsTable += "|------|---------------------------|-----------------|\n";
+      }
       
       for (const ruling of crossRulings.slice(0, 3)) {
         const rulingNumber = ruling.rulingNumber || "N/A";
@@ -179,7 +188,12 @@ module.exports = async (req, res) => {
         // Format the ruling category and tariff column with proper spacing to prevent single character wrapping
         const rulingCategory = `[${rulingNumber}](https://rulings.cbp.gov/ruling/${rulingNumber})<br>Classification<br>${hts.replace(/,\s*/g, ', ')}`;
         
-        rulingsTable += `| ${formattedDate} | ${rulingCategory} | ${subject} | |\n`;
+        // Check if we're including the related column
+        if (hasRelatedData) {
+          rulingsTable += `| ${formattedDate} | ${rulingCategory} | ${subject} | ${ruling.related || ''} |\n`;
+        } else {
+          rulingsTable += `| ${formattedDate} | ${rulingCategory} | ${subject} |\n`;
+        }
       }
       
       rulingsTable += "\nIMPORTANT: Use the exact CROSS rulings above in your response. Format them in the same way.";

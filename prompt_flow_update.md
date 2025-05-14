@@ -39,8 +39,17 @@ CROSS Rulings:
 
 | DATE | RULING CATEGORY & TARIFF NO | RULING REFERENCE | RELATED |
 |------|---------------------------|-----------------|---------|  
-| 02/19/2014 | [N249681](https://rulings.cbp.gov/ruling/N249681)<br>Classification<br>8413.30.9030, 8413.30.1000 | The tariff classification of fuel pumps and fuel injectors from Germany. | |
-| 04/19/1999 | [D89504](https://rulings.cbp.gov/ruling/D89504)<br>Classification<br>8413.60.0090, 8413.81.0040 | The tariff classification of pumps for aircraft from Great Britain. | |
+| 02/19/2014 | [N249681](https://rulings.cbp.gov/ruling/N249681)<br>Classification<br>8413.30.9030, 8413.30.1000 | The tariff classification of fuel pumps and fuel injectors from Germany. | Related info |
+```
+
+   - If there is no data for the RELATED column, omit the entire column from the table:
+
+```
+CROSS Rulings:
+
+| DATE | RULING CATEGORY & TARIFF NO | RULING REFERENCE |
+|------|---------------------------|-----------------|  
+| 02/19/2014 | [N249681](https://rulings.cbp.gov/ruling/N249681)<br>Classification<br>8413.30.9030, 8413.30.1000 | The tariff classification of fuel pumps and fuel injectors from Germany. |
 ```
 
    - IMPORTANT: Ensure table cells contain complete words - never break a word across lines.
