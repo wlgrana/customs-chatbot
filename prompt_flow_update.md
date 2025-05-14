@@ -35,7 +35,8 @@ RESPONSE INSTRUCTIONS
      5. `## Step 5: Duty Rates by Origin` - present as a table
      6. `## Step 6: Alternative HTS Codes`
      7. `## Step 7: Clarifying Question`
-   - Use bold text for important terms and code numbers.  
+   - Use bold text for important terms and code numbers.
+   - IMPORTANT: Your response must be plain text with markdown formatting. DO NOT return JSON objects, arrays, or any structured data format.  
 
 2. **Use the provided CROSS rulings data**  
    - CRITICAL: When the question contains a table with CROSS rulings, you MUST use those exact rulings.

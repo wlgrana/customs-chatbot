@@ -35,6 +35,18 @@ const renderer = new marked.Renderer();
 
 // Custom renderer for headings to ensure proper styling
 renderer.heading = function(text, level) {
+  // Check if text is an object and convert it to string
+  if (typeof text === 'object') {
+    try {
+      text = JSON.stringify(text);
+    } catch (e) {
+      text = 'Error processing heading';
+    }
+  }
+  
+  // Clean up any remaining [object Object] text
+  text = text.replace(/\[object Object\]/g, '');
+  
   if (level === 2) {
     return `<h2 class="custom-h2">${text}</h2>`;
   } else if (level === 3) {
@@ -190,11 +202,21 @@ function CustomsAgentChat() {
         }]);
       } else if (backendResponse.result) { // Handles existing text results or new text_result kind
         // Just show the AI response, which now includes the CROSS rulings
+        // Ensure the response is a string to prevent [object Object] issues
+        let responseContent = backendResponse.result;
+        if (typeof responseContent !== 'string') {
+          try {
+            responseContent = JSON.stringify(responseContent);
+          } catch (e) {
+            responseContent = 'Error processing response';
+          }
+        }
+        
         setMessages((msgs) => [...msgs, {
           role: "assistant",
           kind: backendResponse.kind || "customs_agent_text_result",
-          content: backendResponse.result,
-          raw: backendResponse.result,
+          content: responseContent,
+          raw: responseContent,
           crossRulings: backendResponse.cross_rulings || [],
           timestamp: replyTimestamp
         }]);
@@ -311,13 +333,29 @@ function CustomsAgentChat() {
                           </>
                         ) : (
                           <div className="markdown-content">
-                            <div dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(marked.parse(msg.content || ""), {
-                              ADD_TAGS: ['h2', 'h3'],
-                              ADD_ATTR: ['target', 'rel', 'id', 'class'],
-                              ALLOW_DATA_ATTR: true,
-                              FORBID_ATTR: ['style', 'onerror', 'onload'],
-                              ALLOW_UNKNOWN_PROTOCOLS: false
-                            }) }} />
+                            {/* Preprocess content to ensure proper markdown headings */}
+                            {(() => {
+                              // Clean up the content
+                              let cleanContent = msg.content || "";
+                              
+                              // Replace [object Object] with empty string
+                              cleanContent = cleanContent.replace(/\[object Object\]/g, '');
+                              
+                              // Ensure headings have proper format
+                              cleanContent = cleanContent.replace(/^(Step \d+:)/gm, '## $1');
+                              
+                              // Parse and sanitize
+                              const parsedContent = marked.parse(cleanContent);
+                              const sanitizedContent = DOMPurify.sanitize(parsedContent, {
+                                ADD_TAGS: ['h2', 'h3'],
+                                ADD_ATTR: ['target', 'rel', 'id', 'class'],
+                                ALLOW_DATA_ATTR: true,
+                                FORBID_ATTR: ['style', 'onerror', 'onload'],
+                                ALLOW_UNKNOWN_PROTOCOLS: false
+                              });
+                              
+                              return <div dangerouslySetInnerHTML={{ __html: sanitizedContent }} />;
+                            })()}
                           </div>
                         )
                       ) : (
