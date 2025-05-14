@@ -36,7 +36,9 @@ RESPONSE INSTRUCTIONS
      6. `## Step 6: Alternative HTS Codes`
      7. `## Step 7: Clarifying Question`
    - Use bold text for important terms and code numbers.
-   - IMPORTANT: Your response must be plain text with markdown formatting. DO NOT return JSON objects, arrays, or any structured data format.  
+   - EXTREMELY IMPORTANT: Your response MUST be plain text with markdown formatting ONLY. DO NOT return JSON objects, token objects, arrays, or any structured data format.
+   - DO NOT include any tokens, objects, or JSON in your response. ONLY include plain text with markdown formatting.
+   - NEVER return headings in this format: `{"type":"heading","raw":"...","depth":3,"text":"...","tokens":[...]}`  
 
 2. **Use the provided CROSS rulings data**  
    - CRITICAL: When the question contains a table with CROSS rulings, you MUST use those exact rulings.

@@ -338,11 +338,30 @@ function CustomsAgentChat() {
                               // Clean up the content
                               let cleanContent = msg.content || "";
                               
+                              // Handle token objects in the response
+                              cleanContent = cleanContent.replace(/\{"type":"heading"[^\}]+\}\}/g, (match) => {
+                                try {
+                                  // Try to parse the JSON object
+                                  const obj = JSON.parse(match);
+                                  if (obj.text) {
+                                    // Return proper markdown heading based on depth
+                                    const hashes = '#'.repeat(obj.depth || 2);
+                                    return `${hashes} ${obj.text}`;
+                                  }
+                                } catch (e) {
+                                  // If parsing fails, just remove the object
+                                }
+                                return '';
+                              });
+                              
                               // Replace [object Object] with empty string
                               cleanContent = cleanContent.replace(/\[object Object\]/g, '');
                               
                               // Ensure headings have proper format
                               cleanContent = cleanContent.replace(/^(Step \d+:)/gm, '## $1');
+                              
+                              // Clean up any JSON-like content
+                              cleanContent = cleanContent.replace(/\{"[^\}]+\}\}/g, '');
                               
                               // Parse and sanitize
                               const parsedContent = marked.parse(cleanContent);

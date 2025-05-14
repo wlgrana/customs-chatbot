@@ -230,7 +230,35 @@ module.exports = async (req, res) => {
       const result = response.data;
       console.log("PARSED JSON:", result);
 
-      const outputText = result.output || result.answer || "[No output or answer field in response]";
+      let outputText = result.output || result.answer || "[No output or answer field in response]";
+
+      // Clean up any token objects in the response
+      if (typeof outputText === 'string') {
+        // Handle token objects in the response
+        outputText = outputText.replace(/\{"type":"heading"[^\}]+\}/g, (match) => {
+          try {
+            // Try to parse the JSON object
+            const obj = JSON.parse(match);
+            if (obj.text) {
+              // Return proper markdown heading based on depth
+              const hashes = '#'.repeat(obj.depth || 2);
+              return `${hashes} ${obj.text}`;
+            }
+          } catch (e) {
+            // If parsing fails, just remove the object
+          }
+          return '';
+        });
+        
+        // Replace [object Object] with empty string
+        outputText = outputText.replace(/\[object Object\]/g, '');
+        
+        // Ensure headings have proper format
+        outputText = outputText.replace(/^(Step \d+:)/gm, '## $1');
+        
+        // Clean up any JSON-like content
+        outputText = outputText.replace(/\{"[^\}]+\}/g, '');
+      }
 
       return res.status(200).json({
         kind: "customs_agent_result",
