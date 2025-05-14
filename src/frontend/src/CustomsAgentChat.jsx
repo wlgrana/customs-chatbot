@@ -407,6 +407,20 @@ function CustomsAgentChat() {
                               
                               // Final cleanup - remove any remaining JSON-like content
                               cleanContent = cleanContent.replace(/\{"type":"[^"]+"[^\}]*(?=\s|$)/g, '');
+                              
+                              // Add missing step headings - ensure they start with ##
+                              cleanContent = cleanContent.replace(/^(Step \d+:)(?!#)/gm, '## $1');
+                              
+                              // Make sure all sections have proper ## formatting according to new prompt format
+                              cleanContent = cleanContent.replace(/\b(Product Analysis:)\b(?!#)/g, '## Step 1: Product Analysis');
+                              cleanContent = cleanContent.replace(/\b(HTS Classification Logic:)\b(?!#)/g, '## Step 2: HTS Classification Logic');
+                              cleanContent = cleanContent.replace(/\b(Subheading Determination:)\b(?!#)/g, '## Step 3: Subheading Determination');
+                              cleanContent = cleanContent.replace(/\b(CROSS Rulings Analysis:)\b(?!#)/g, '## Step 4: CROSS Rulings Analysis');
+                              cleanContent = cleanContent.replace(/\b(Duty Rates by Origin:)\b(?!#)/g, '## Step 5: Duty Rates by Origin');
+                              cleanContent = cleanContent.replace(/\b(Alternative HTS Codes:)\b(?!#)/g, '## Step 6: Alternative HTS Codes');
+                              cleanContent = cleanContent.replace(/\b(Clarifying Question:)\b(?!#)/g, '## Step 7: Clarifying Question');
+                              
+                              // Clean up any remaining JSON-like content
                               cleanContent = cleanContent.replace(/\{"[^\}]+\}/g, '');
                               
                               console.log('Cleaned content:', cleanContent.substring(0, 500));

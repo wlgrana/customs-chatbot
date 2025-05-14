@@ -257,10 +257,17 @@ module.exports = async (req, res) => {
               }
               
               if (obj && obj.text) {
-                // Create proper heading based on depth
-                const depth = obj.depth || 2;
-                const hashes = '#'.repeat(depth);
-                const headingText = `${hashes} ${obj.text}`;
+                // Create proper heading based on depth or step pattern
+                let headingText;
+                if (obj.text.match(/^Step \d+:/)) {
+                  // It's a step heading, format it as ## Step N: Text
+                  headingText = `## ${obj.text}`;
+                } else {
+                  // Use the depth if available
+                  const depth = obj.depth || 2;
+                  const hashes = '#'.repeat(depth);
+                  headingText = `${hashes} ${obj.text}`;
+                }
                 
                 // Replace the match with proper heading
                 outputText = outputText.replace(match, headingText);
@@ -272,7 +279,14 @@ module.exports = async (req, res) => {
               // If JSON parsing fails, try regex extraction
               const textMatch = match.match(/"text":"([^"]+)"/);
               if (textMatch && textMatch[1]) {
-                const headingText = `## ${textMatch[1]}`;
+                // Check if it's a step heading
+                const text = textMatch[1];
+                let headingText;
+                if (text.match(/^Step \d+:/)) {
+                  headingText = `## ${text}`;
+                } else {
+                  headingText = `## ${text}`;
+                }
                 outputText = outputText.replace(match, headingText);
                 console.log(`Regex extracted heading: ${headingText}`);
               } else {
@@ -288,6 +302,9 @@ module.exports = async (req, res) => {
         
         // Format specific patterns we've seen
         outputText = outputText.replace(/\{"type":"heading","raw":"##\s+([^"]+)[^"]*","depth":\d+,"text":"([^"]+)","tokens":[^\}]+\}/g, '## $2');
+        
+        // Add missing step headings - ensure they start with ##
+        outputText = outputText.replace(/^(Step \d+:)(?!#)/gm, '## $1');
         
         // Replace [object Object] with empty string
         outputText = outputText.replace(/\[object Object\]/g, '');
