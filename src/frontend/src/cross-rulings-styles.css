@@ -1,5 +1,24 @@
 /* CROSS Rulings Table Styles for Markdown Tables */
 
+/* Style headings in the agent bubble */
+.agent-bubble h2 {
+  color: #2c3e50;
+  font-size: 1.4em;
+  margin-top: 20px;
+  margin-bottom: 10px;
+  padding-bottom: 5px;
+  border-bottom: 1px solid #eee;
+  font-weight: 600;
+}
+
+.agent-bubble h3 {
+  color: #34495e;
+  font-size: 1.2em;
+  margin-top: 15px;
+  margin-bottom: 8px;
+  font-weight: 600;
+}
+
 /* Style the markdown tables in the agent bubble */
 .agent-bubble table {
   width: 100%;
@@ -48,4 +67,11 @@
   margin-bottom: 3px;
   display: block;
   content: "";
+}
+
+/* Style for CROSS Rulings section */
+.agent-bubble h2:contains("CROSS Rulings") {
+  margin-top: 25px;
+  color: #1e4a76;
+  border-bottom-color: #c6d9f0;
 }

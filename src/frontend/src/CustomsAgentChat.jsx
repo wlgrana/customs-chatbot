@@ -62,8 +62,34 @@ function formatCrossRulings(rulings) {
       }).join(', ');
     }
     
-    // Extract subject
-    const subject = ruling.subject || "N/A";
+    // Function to format message content with markdown and links
+    const formatMessage = (content) => {
+      if (!content) return "";
+      
+      // Replace markdown headings with HTML headings
+      let formattedContent = content.replace(/^## (.+)$/gm, '<h2>$1</h2>');
+      formattedContent = formattedContent.replace(/^### (.+)$/gm, '<h3>$1</h3>');
+      
+      // Replace markdown links with HTML links
+      formattedContent = formattedContent.replace(/\[([^\]]+)\]\(([^\)]+)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>');
+      
+      // Replace markdown bold with HTML bold
+      formattedContent = formattedContent.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+      
+      // Replace markdown italic with HTML italic
+      formattedContent = formattedContent.replace(/\*([^*]+)\*/g, '<em>$1</em>');
+      
+      // Replace newlines with HTML line breaks, but not inside code blocks
+      formattedContent = formattedContent.replace(/\n/g, '<br />');
+      
+      // Sanitize the HTML to prevent XSS attacks
+      return DOMPurify.sanitize(formattedContent, {
+        ADD_TAGS: ['h2', 'h3'],
+        ADD_ATTR: ['target', 'rel']
+      });
+    };
+    
+    const subject = formatMessage(ruling.subject || "N/A");
     
     // Format the ruling category and tariff column
     const rulingCategory = `[${rulingNumber}](https://rulings.cbp.gov/ruling/${rulingNumber})<br>${ruling.categories || "Classification"}<br>${tariffs}`;
@@ -141,41 +167,15 @@ function CustomsAgentChat() {
           timestamp: replyTimestamp
         }]);
       } else if (backendResponse.result) { // Handles existing text results or new text_result kind
-        // If we have CROSS rulings, display them first
-        if (backendResponse.cross_rulings && backendResponse.cross_rulings.length > 0) {
-          // Format the CROSS rulings into a readable format
-          const formattedRulings = formatCrossRulings(backendResponse.cross_rulings);
-          
-          // Add the CROSS rulings as a separate message
-          setMessages((msgs) => [...msgs, {
-            role: "assistant",
-            kind: "cross_rulings_info",
-            content: "I found the following U.S. Customs CROSS rulings that may be relevant:",
-            crossRulings: backendResponse.cross_rulings,
-            formattedRulings: formattedRulings,
-            timestamp: replyTimestamp
-          }]);
-          
-          // Small delay before showing AI response
-          setTimeout(() => {
-            setMessages((msgs) => [...msgs, {
-              role: "assistant",
-              kind: backendResponse.kind || "customs_agent_text_result",
-              content: backendResponse.result,
-              raw: backendResponse.result,
-              timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-            }]);
-          }, 500);
-        } else {
-          // No CROSS rulings, just show the AI response
-          setMessages((msgs) => [...msgs, {
-            role: "assistant",
-            kind: backendResponse.kind || "customs_agent_text_result",
-            content: backendResponse.result,
-            raw: backendResponse.result,
-            timestamp: replyTimestamp
-          }]);
-        }
+        // Just show the AI response, which now includes the CROSS rulings
+        setMessages((msgs) => [...msgs, {
+          role: "assistant",
+          kind: backendResponse.kind || "customs_agent_text_result",
+          content: backendResponse.result,
+          raw: backendResponse.result,
+          crossRulings: backendResponse.cross_rulings || [],
+          timestamp: replyTimestamp
+        }]);
       } else if (backendResponse.error) {
         setMessages((msgs) => [...msgs, {
           role: "assistant",
@@ -288,7 +288,10 @@ function CustomsAgentChat() {
                             </p>
                           </>
                         ) : (
-                          <span dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(marked.parse(msg.content || "")) }} />
+                          <span dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(marked.parse(msg.content || ""), {
+                            ADD_TAGS: ['h2', 'h3'],
+                            ADD_ATTR: ['target', 'rel']
+                          }) }} />
                         )
                       ) : (
                         <span>{msg.displayContent || msg.content}</span>
