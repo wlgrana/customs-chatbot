@@ -234,6 +234,15 @@ module.exports = async (req, res) => {
 
       // Clean up any token objects in the response
       if (typeof outputText === 'string') {
+        // Direct fix for the exact pattern we're seeing
+        outputText = outputText.replace(/\{"type":"heading","raw":"### ([^"]+)\\n","depth":\d+,"text":"([^"]+)","tokens":\[[^\]]+\]\}/g, '### $2');
+        
+        // Also handle variations with ## prefix
+        outputText = outputText.replace(/\{"type":"heading","raw":"## ([^"]+)\\n","depth":\d+,"text":"([^"]+)","tokens":\[[^\]]+\]\}/g, '## $2');
+        
+        // General rule for any heading type
+        outputText = outputText.replace(/\{"type":"heading"[^}]*"text":"([^"]+)"[^}]*\}/g, '## $1');
+
         console.log('Original outputText before cleanup:', outputText.substring(0, 500));
 
         // NEW APPROACH: More aggressive cleaning of JSON objects

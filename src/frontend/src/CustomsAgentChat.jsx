@@ -338,6 +338,15 @@ function CustomsAgentChat() {
                               // Clean up the content
                               let cleanContent = msg.content || "";
                               
+                              // Direct fix for the exact pattern we're seeing
+                              cleanContent = cleanContent.replace(/\{"type":"heading","raw":"### ([^"]+)\\n","depth":\d+,"text":"([^"]+)","tokens":\[[^\]]+\]\}/g, '### $2');
+                              
+                              // Also handle variations with ## prefix
+                              cleanContent = cleanContent.replace(/\{"type":"heading","raw":"## ([^"]+)\\n","depth":\d+,"text":"([^"]+)","tokens":\[[^\]]+\]\}/g, '## $2');
+                              
+                              // General rule for any heading type
+                              cleanContent = cleanContent.replace(/\{"type":"heading"[^}]*"text":"([^"]+)"[^}]*\}/g, '## $1');
+                              
                               console.log('Original content before cleanup:', cleanContent.substring(0, 500));
                               
                               // NEW APPROACH: More aggressive cleaning of JSON objects
