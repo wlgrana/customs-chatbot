@@ -234,46 +234,60 @@ module.exports = async (req, res) => {
 
       // Clean up any token objects in the response
       if (typeof outputText === 'string') {
-        // First, directly replace the specific JSON pattern seen in the screenshot
-        outputText = outputText.replace(/\{"type":"heading","raw":"##\s+([^"]+)\\n","depth":\d+,"text":"([^"]+)","tokens":[^\}]+\}\}/g, '## $2');
+        console.log('Original outputText before cleanup:', outputText.substring(0, 500));
+
+        // NEW APPROACH: More aggressive cleaning of JSON objects
+        const jsonObjectRegex = /\{"type":"heading"[^\}]*\}/g;
+        const matches = outputText.match(jsonObjectRegex);
         
-        // Handle complete heading objects with tokens array
-        outputText = outputText.replace(/\{"type":"heading","raw":"[^"]+","depth":(\d+),"text":"([^"]+)","tokens":[^\}]+\}/g, (match) => {
-          try {
-            // Try to parse the JSON object
-            const obj = JSON.parse(match);
-            if (obj.text) {
-              // Return proper markdown heading based on depth
-              const hashes = '#'.repeat(obj.depth || 2);
-              return `${hashes} ${obj.text}`;
+        if (matches) {
+          console.log('Found JSON objects in response:', matches);
+          
+          // For each match, extract the text field and replace with proper heading
+          matches.forEach(match => {
+            try {
+              // Try to parse the match as JSON
+              let obj;
+              try {
+                obj = JSON.parse(match);
+              } catch (e) {
+                // If parsing fails, try to fix common issues
+                const fixedMatch = match.replace(/\}\}/g, '}').replace(/\}\{/g, '},{');
+                obj = JSON.parse(fixedMatch);
+              }
+              
+              if (obj && obj.text) {
+                // Create proper heading based on depth
+                const depth = obj.depth || 2;
+                const hashes = '#'.repeat(depth);
+                const headingText = `${hashes} ${obj.text}`;
+                
+                // Replace the match with proper heading
+                outputText = outputText.replace(match, headingText);
+                console.log(`Replaced JSON object with heading: ${headingText}`);
+              }
+            } catch (e) {
+              console.error('Error processing JSON object:', match, e);
+              
+              // If JSON parsing fails, try regex extraction
+              const textMatch = match.match(/"text":"([^"]+)"/);
+              if (textMatch && textMatch[1]) {
+                const headingText = `## ${textMatch[1]}`;
+                outputText = outputText.replace(match, headingText);
+                console.log(`Regex extracted heading: ${headingText}`);
+              } else {
+                // If all else fails, just remove the JSON object
+                outputText = outputText.replace(match, '');
+              }
             }
-          } catch (e) {
-            console.error('Error parsing complex heading object:', e);
-          }
-          return '';
-        });
+          });
+        }
         
-        // Handle simpler token objects in the response
-        outputText = outputText.replace(/\{"type":"heading"[^\}]*\}(?=\s|$)/g, (match) => {
-          try {
-            // Try to parse the JSON object
-            const obj = JSON.parse(match);
-            if (obj.text) {
-              // Return proper markdown heading based on depth
-              const hashes = '#'.repeat(obj.depth || 2);
-              return `${hashes} ${obj.text}`;
-            }
-          } catch (e) {
-            console.error('Error parsing heading object:', e);
-          }
-          return '';
-        });
+        // Extract any text fields remaining in JSON objects
+        outputText = outputText.replace(/\{"type":"[^"]+"[^\}]*"text":"([^"]+)"[^\}]*\}/g, '## $1');
         
-        // Handle token objects with escaped quotes
-        outputText = outputText.replace(/\{\\"type\\":\\"heading\\"[^\}]*\}(?=\s|$)/g, '');
-        
-        // Handle any remaining JSON-like objects
-        outputText = outputText.replace(/\{"[^"]+":[^\}]*\}(?=\s|$)/g, '');
+        // Format specific patterns we've seen
+        outputText = outputText.replace(/\{"type":"heading","raw":"##\s+([^"]+)[^"]*","depth":\d+,"text":"([^"]+)","tokens":[^\}]+\}/g, '## $2');
         
         // Replace [object Object] with empty string
         outputText = outputText.replace(/\[object Object\]/g, '');
@@ -281,11 +295,11 @@ module.exports = async (req, res) => {
         // Ensure headings have proper format
         outputText = outputText.replace(/^(Step \d+:)/gm, '## $1');
         
-        // Final cleanup of any remaining curly braces that might be part of incomplete JSON
+        // Final cleanup - remove any remaining JSON-like content
         outputText = outputText.replace(/\{"type":"[^"]+"[^\}]*(?=\s|$)/g, '');
-        
-        // Clean up any JSON-like content
         outputText = outputText.replace(/\{"[^\}]+\}/g, '');
+        
+        console.log('Cleaned outputText:', outputText.substring(0, 500));
       }
 
       return res.status(200).json({
