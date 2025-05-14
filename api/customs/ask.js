@@ -194,9 +194,18 @@ module.exports = async (req, res) => {
     }
 
     // Prepare payload for Azure Prompt Flow with CROSS rulings context
+    // Format the context to make CROSS rulings data stand out more prominently
+    let enhancedContext = "";
+    
+    if (crossRulings && crossRulings.length > 0) {
+      enhancedContext = `IMPORTANT - USE THESE EXACT CROSS RULINGS IN YOUR RESPONSE:\n\n${aiContexts}\n\nDO NOT GENERATE DIFFERENT RULINGS. USE THE ABOVE RULINGS ONLY.`;
+    } else {
+      enhancedContext = aiContexts;
+    }
+    
     const payload = {
       question: message,
-      contexts: aiContexts
+      contexts: enhancedContext
     };
 
     console.log("Sending payload to Azure ML:", payload);
