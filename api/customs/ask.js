@@ -176,8 +176,8 @@ module.exports = async (req, res) => {
         // Extract subject
         const subject = ruling.subject || "N/A";
         
-        // Format the ruling category and tariff column
-        const rulingCategory = `[${rulingNumber}](https://rulings.cbp.gov/ruling/${rulingNumber})<br>Classification<br>${hts}`;
+        // Format the ruling category and tariff column with proper spacing to prevent single character wrapping
+        const rulingCategory = `[${rulingNumber}](https://rulings.cbp.gov/ruling/${rulingNumber})<br>Classification<br>${hts.replace(/,\s*/g, ', ')}`;
         
         rulingsTable += `| ${formattedDate} | ${rulingCategory} | ${subject} | |\n`;
       }

@@ -45,6 +45,9 @@
   border: 1px solid #ddd;
   vertical-align: top;
   line-height: 1.4;
+  white-space: normal;
+  word-break: keep-all;
+  word-wrap: break-word;
 }
 
 .agent-bubble tr:nth-child(even) {

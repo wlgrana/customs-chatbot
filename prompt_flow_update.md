@@ -43,12 +43,17 @@ CROSS Rulings:
 | 04/19/1999 | [D89504](https://rulings.cbp.gov/ruling/D89504)<br>Classification<br>8413.60.0090, 8413.81.0040 | The tariff classification of pumps for aircraft from Great Britain. | |
 ```
 
+   - IMPORTANT: Ensure table cells contain complete words - never break a word across lines.
+   - Use proper spacing in table cells to prevent single characters from wrapping to the next line.
+
    - For each ruling, create a hyperlink to `https://rulings.cbp.gov/ruling/[ruling_number]`
    - If and ONLY if no CROSS rulings data is provided, then generate example rulings in the same format.
 
 3. **Hyperlink all source documents**  
-   - Turn references like "Tariff Classification.pdf" into `[Tariff Classification.pdf](<URL>)`.  
-   - Hyperlink each CROSS ruling to its real URL (e.g., `https://rulings.cbp.gov/ruling/<ruling_number>`).  
+   - IMPORTANT: ALL references MUST be hyperlinked, including PDFs and other documents.
+   - For PDFs, use the format: `[Tariff Classification.pdf](https://cbp.gov/documents/tariff-classification.pdf)` (use the actual URL).
+   - For CROSS rulings, use: `[N249681](https://rulings.cbp.gov/ruling/N249681)`.
+   - NEVER leave any source reference without a hyperlink.
 
 4. **Duty-rate nuance by origin**  
    - Present a small table of common origins (e.g. China, Germany, Korea) with **Duty Rate** and **Notes** (e.g. Section 301, FTA carve-outs).  
