@@ -339,7 +339,7 @@ function CustomsAgentChat() {
                               let cleanContent = msg.content || "";
                               
                               // Handle token objects in the response
-                              cleanContent = cleanContent.replace(/\{"type":"heading"[^\}]+\}\}/g, (match) => {
+                              cleanContent = cleanContent.replace(/\{"type":"heading"[^\}]*\}(?=\s|$)/g, (match) => {
                                 try {
                                   // Try to parse the JSON object
                                   const obj = JSON.parse(match);
@@ -349,10 +349,16 @@ function CustomsAgentChat() {
                                     return `${hashes} ${obj.text}`;
                                   }
                                 } catch (e) {
-                                  // If parsing fails, just remove the object
+                                  console.error('Error parsing heading object:', e);
                                 }
                                 return '';
                               });
+                              
+                              // Handle token objects with escaped quotes
+                              cleanContent = cleanContent.replace(/\{\\"type\\":\\"heading\\"[^\}]*\}(?=\s|$)/g, '');
+                              
+                              // Handle any remaining JSON-like objects
+                              cleanContent = cleanContent.replace(/\{"[^"]+":[^\}]*\}(?=\s|$)/g, '');
                               
                               // Replace [object Object] with empty string
                               cleanContent = cleanContent.replace(/\[object Object\]/g, '');

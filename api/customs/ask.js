@@ -235,7 +235,7 @@ module.exports = async (req, res) => {
       // Clean up any token objects in the response
       if (typeof outputText === 'string') {
         // Handle token objects in the response
-        outputText = outputText.replace(/\{"type":"heading"[^\}]+\}/g, (match) => {
+        outputText = outputText.replace(/\{"type":"heading"[^\}]*\}(?=\s|$)/g, (match) => {
           try {
             // Try to parse the JSON object
             const obj = JSON.parse(match);
@@ -245,10 +245,16 @@ module.exports = async (req, res) => {
               return `${hashes} ${obj.text}`;
             }
           } catch (e) {
-            // If parsing fails, just remove the object
+            console.error('Error parsing heading object:', e);
           }
           return '';
         });
+        
+        // Handle token objects with escaped quotes
+        outputText = outputText.replace(/\{\\"type\\":\\"heading\\"[^\}]*\}(?=\s|$)/g, '');
+        
+        // Handle any remaining JSON-like objects
+        outputText = outputText.replace(/\{"[^"]+":[^\}]*\}(?=\s|$)/g, '');
         
         // Replace [object Object] with empty string
         outputText = outputText.replace(/\[object Object\]/g, '');
