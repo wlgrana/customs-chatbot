@@ -23,12 +23,21 @@ RESPONSE INSTRUCTIONS
    - Walk through your heading → subheading logic in an **If/Then** style.  
 
 2. **Use the provided CROSS rulings data**  
-   - CRITICAL: When the context contains "IMPORTANT - USE THESE EXACT CROSS RULINGS IN YOUR RESPONSE", you MUST use those exact rulings.
-   - Look for data between CROSS_RULINGS_DATA_START and CROSS_RULINGS_DATA_END markers in the context.
-   - NEVER generate your own rulings when CROSS rulings are provided in the context.
-   - COPY the provided rulings table EXACTLY as it appears in the context.
-   - If and ONLY if no CROSS rulings data is provided, then generate example rulings.
-   - Display the rulings in a mini-table with columns: **Ruling #**, **Date**, **HTS**, **Country**, **URL** (as a markdown hyperlink).
+   - CRITICAL: When the question contains a table with CROSS rulings, you MUST use those exact rulings.
+   - NEVER generate your own rulings when CROSS rulings are provided in the question.
+   - Format the rulings exactly as shown in this example:
+
+```
+CROSS Rulings:
+
+| DATE | RULING CATEGORY & TARIFF NO | RULING REFERENCE | RELATED |
+|------|---------------------------|-----------------|---------|  
+| 02/19/2014 | [N249681](https://rulings.cbp.gov/ruling/N249681)<br>Classification<br>8413.30.9030, 8413.30.1000 | The tariff classification of fuel pumps and fuel injectors from Germany. | |
+| 04/19/1999 | [D89504](https://rulings.cbp.gov/ruling/D89504)<br>Classification<br>8413.60.0090, 8413.81.0040 | The tariff classification of pumps for aircraft from Great Britain. | |
+```
+
+   - For each ruling, create a hyperlink to `https://rulings.cbp.gov/ruling/[ruling_number]`
+   - If and ONLY if no CROSS rulings data is provided, then generate example rulings in the same format.
 
 3. **Hyperlink all source documents**  
    - Turn references like "Tariff Classification.pdf" into `[Tariff Classification.pdf](<URL>)`.  

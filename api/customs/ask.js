@@ -155,10 +155,10 @@ module.exports = async (req, res) => {
     let enhancedQuestion = message;
     
     if (crossRulings && crossRulings.length > 0) {
-      // Format the rulings as a simple table directly in the question
-      let rulingsTable = "\n\nUSE THESE EXACT CROSS RULINGS IN YOUR RESPONSE:\n\n";
-      rulingsTable += "| Ruling # | Date | HTS | Country | URL |\n";
-      rulingsTable += "|---------|------|-----|---------|-----|\n";
+      // Format the rulings to match the frontend display
+      let rulingsTable = "\n\nCROSS Rulings:\n\n";
+      rulingsTable += "| DATE | RULING CATEGORY & TARIFF NO | RULING REFERENCE | RELATED |\n";
+      rulingsTable += "|------|---------------------------|-----------------|---------|\n";
       
       for (const ruling of crossRulings.slice(0, 3)) {
         const rulingNumber = ruling.rulingNumber || "N/A";
@@ -173,19 +173,16 @@ module.exports = async (req, res) => {
         // Format HTS codes
         const hts = ruling.tariffs && ruling.tariffs.length > 0 ? ruling.tariffs.join(', ') : "N/A";
         
-        // Extract country from subject
-        let country = "N/A";
-        if (ruling.subject) {
-          const countryMatch = ruling.subject.match(/from\s+([\w\s]+)(?:\.|$)/i);
-          if (countryMatch && countryMatch[1]) {
-            country = countryMatch[1].trim();
-          }
-        }
+        // Extract subject
+        const subject = ruling.subject || "N/A";
         
-        rulingsTable += `| ${rulingNumber} | ${formattedDate} | ${hts} | ${country} | ${rulingNumber} |\n`;
+        // Format the ruling category and tariff column
+        const rulingCategory = `[${rulingNumber}](https://rulings.cbp.gov/ruling/${rulingNumber})<br>Classification<br>${hts}`;
+        
+        rulingsTable += `| ${formattedDate} | ${rulingCategory} | ${subject} | |\n`;
       }
       
-      rulingsTable += "\nDO NOT GENERATE DIFFERENT RULINGS. USE THE ABOVE RULINGS ONLY.";
+      rulingsTable += "\nIMPORTANT: Use the exact CROSS rulings above in your response. Format them in the same way.";
       
       // Append the rulings table to the question
       enhancedQuestion = message + rulingsTable;
