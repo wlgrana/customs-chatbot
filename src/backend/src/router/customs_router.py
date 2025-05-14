@@ -118,26 +118,62 @@ def customs_router(message: str, language: str = None, id: str = None) -> dict:
             logger.info(f"Extracted search term: '{search_term}' for API call.")
             try:
                 rulings_from_api = search_cross_rulings(search_term, page_size=3)
-                
                 if rulings_from_api:
                     logger.info(f"Successfully retrieved {len(rulings_from_api)} rulings from API for '{search_term}'.")
-                    ai_contexts = format_cross_rulings_for_context(rulings_from_api, max_to_format=3)
+                    formatted = format_cross_rulings_for_context(rulings_from_api, max_to_format=3)
+                    # Return the actual top 3 rulings directly, bypassing Azure ML
+                    return {
+                        "kind": "cross_rulings_result",
+                        "result": formatted,
+                        "cross_rulings": rulings_from_api,
+                        "history": [],
+                        "error": None
+                    }
                 else:
                     logger.info(f"No rulings returned from API for '{search_term}'.")
-                    ai_contexts = f"No specific U.S. Customs CROSS rulings were found for '{search_term}'."
-            
+                    return {
+                        "kind": "cross_rulings_result",
+                        "result": f"No specific U.S. Customs CROSS rulings were found for '{search_term}'.",
+                        "cross_rulings": [],
+                        "history": [],
+                        "error": None
+                    }
             except requests.exceptions.HTTPError as e_http:
                 logger.error(f"CROSS API HTTP error for search term '{search_term}': {e_http}")
-                ai_contexts = f"Could not retrieve CROSS rulings for '{search_term}' due to an API error: {e_http.response.status_code}."
+                return {
+                    "kind": "cross_rulings_result",
+                    "result": f"Could not retrieve CROSS rulings for '{search_term}' due to an API error: {getattr(e_http.response, 'status_code', 'N/A')}.",
+                    "cross_rulings": [],
+                    "history": [],
+                    "error": str(e_http)
+                }
             except requests.exceptions.RequestException as e_req:
                 logger.error(f"CROSS API request error for search term '{search_term}': {e_req}")
-                ai_contexts = f"Could not retrieve CROSS rulings for '{search_term}' due to a network error."
+                return {
+                    "kind": "cross_rulings_result",
+                    "result": f"Could not retrieve CROSS rulings for '{search_term}' due to a network error.",
+                    "cross_rulings": [],
+                    "history": [],
+                    "error": str(e_req)
+                }
             except ValueError as e_val:
                 logger.error(f"CROSS API data error for search term '{search_term}': {e_val}")
-                ai_contexts = f"Could not process data from CROSS rulings for '{search_term}'."
+                return {
+                    "kind": "cross_rulings_result",
+                    "result": f"Could not process data from CROSS rulings for '{search_term}'.",
+                    "cross_rulings": [],
+                    "history": [],
+                    "error": str(e_val)
+                }
             except Exception as e_scrp:
                 logger.error(f"Unexpected error during scraping for '{search_term}': {e_scrp}", exc_info=True)
-                ai_contexts = f"An unexpected error occurred while trying to get CROSS rulings for '{search_term}'."
+                return {
+                    "kind": "cross_rulings_result",
+                    "result": f"An unexpected error occurred while trying to get CROSS rulings for '{search_term}'.",
+                    "cross_rulings": [],
+                    "history": [],
+                    "error": str(e_scrp)
+                }
         else:
             logger.info("No search term extracted from classification question. AI will rely on general knowledge.")
             ai_contexts = "Note: A specific item for CROSS ruling search was not identified in the query."
