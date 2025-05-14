@@ -31,11 +31,24 @@ const apiKey = import.meta.env.VITE_OPENAI_API_KEY;
 const apiVersion = import.meta.env.VITE_OPENAI_API_VERSION;
 
 // Configure marked to properly handle headings
+const renderer = new marked.Renderer();
+
+// Custom renderer for headings to ensure proper styling
+renderer.heading = function(text, level) {
+  if (level === 2) {
+    return `<h2 class="custom-h2">${text}</h2>`;
+  } else if (level === 3) {
+    return `<h3 class="custom-h3">${text}</h3>`;
+  }
+  return `<h${level}>${text}</h${level}>`;
+};
+
 marked.setOptions({
   headerIds: true,
   mangle: false,
   breaks: true,
-  gfm: true
+  gfm: true,
+  renderer: renderer
 });
 
 // Function to format CROSS rulings for display in a format similar to the CBP website
@@ -300,7 +313,10 @@ function CustomsAgentChat() {
                           <div className="markdown-content">
                             <div dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(marked.parse(msg.content || ""), {
                               ADD_TAGS: ['h2', 'h3'],
-                              ADD_ATTR: ['target', 'rel', 'id', 'class']
+                              ADD_ATTR: ['target', 'rel', 'id', 'class'],
+                              ALLOW_DATA_ATTR: true,
+                              FORBID_ATTR: ['style', 'onerror', 'onload'],
+                              ALLOW_UNKNOWN_PROTOCOLS: false
                             }) }} />
                           </div>
                         )

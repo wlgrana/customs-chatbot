@@ -18,15 +18,23 @@ Use the retrieved document context to generate a clear, consolidated, structured
 
 RESPONSE INSTRUCTIONS
 1. **Use proper formatting and headings**  
-   - Use markdown headings (e.g., `## Step 1: Product Analysis`) for each major section.
-   - Format your response with clear sections in this order:
-     1. Product Analysis (H2)
-     2. HTS Classification Logic (H2) - cite which GRIs you used
-     3. Subheading Determination (H2)
-     4. CROSS Rulings Analysis (H2) - include the table here
-     5. Duty Rates by Origin (H2) - present as a table
-     6. Alternative HTS Codes (H2)
-     7. Clarifying Question (H2)
+   - CRITICAL: You MUST use proper markdown headings with double hash symbols (e.g., `## Step 1: Product Analysis`) for each major section.
+   - Each heading MUST start with the ## prefix followed by a space, like this:
+     ```
+     ## Step 1: Product Analysis
+     Content goes here...
+     
+     ## Step 2: HTS Classification Logic
+     More content...
+     ```
+   - Format your response with these exact headings in this order:
+     1. `## Step 1: Product Analysis`
+     2. `## Step 2: HTS Classification Logic` - cite which GRIs you used
+     3. `## Step 3: Subheading Determination`
+     4. `## Step 4: CROSS Rulings Analysis` - include the table here
+     5. `## Step 5: Duty Rates by Origin` - present as a table
+     6. `## Step 6: Alternative HTS Codes`
+     7. `## Step 7: Clarifying Question`
    - Use bold text for important terms and code numbers.  
 
 2. **Use the provided CROSS rulings data**  

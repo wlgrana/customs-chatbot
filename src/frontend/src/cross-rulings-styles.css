@@ -2,7 +2,8 @@
 
 /* Style headings in the agent bubble and markdown content */
 .agent-bubble h2,
-.markdown-content h2 {
+.markdown-content h2,
+.custom-h2 {
   color: #2c3e50;
   font-size: 1.4em;
   margin-top: 20px;
@@ -14,13 +15,23 @@
 }
 
 .agent-bubble h3,
-.markdown-content h3 {
+.markdown-content h3,
+.custom-h3 {
   color: #34495e;
   font-size: 1.2em;
   margin-top: 15px;
   margin-bottom: 8px;
   font-weight: 600;
   display: block;
+}
+
+/* Ensure step headings are clearly visible */
+h2[class="custom-h2"],
+.custom-h2 {
+  background-color: #f8f9fa;
+  padding: 10px;
+  border-radius: 4px;
+  border-left: 4px solid #3498db;
 }
 
 /* Ensure markdown content has proper spacing */
