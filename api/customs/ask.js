@@ -90,8 +90,10 @@ function formatCrossRulingsForContext(rulings, maxToFormat = 3) {
     return "No specific CROSS rulings found.";
   }
   
-  // Format as a markdown table specifically for the Prompt Flow to recognize and use directly
-  let formattedText = "CROSS_RULINGS_DATA_START\n";
+  // Create a more explicit format that's easier for the model to understand and use
+  let formattedText = "";
+  formattedText += "CROSS RULINGS TABLE - COPY THIS EXACT TABLE INTO YOUR RESPONSE:\n\n";
+  formattedText += "```markdown\n";
   formattedText += "| Ruling # | Date | HTS | Country | URL |\n";
   formattedText += "|---------|------|-----|---------|-----|\n";
   
@@ -99,7 +101,7 @@ function formatCrossRulingsForContext(rulings, maxToFormat = 3) {
     const ruling = rulings[i];
     const rulingNumber = ruling.rulingNumber || "N/A";
     
-    // Format date as MM/DD/YYYY
+    // Format date in a more readable format
     let formattedDate = "N/A";
     if (ruling.rulingDate) {
       const date = new Date(ruling.rulingDate);
@@ -124,7 +126,11 @@ function formatCrossRulingsForContext(rulings, maxToFormat = 3) {
     formattedText += `| ${rulingNumber} | ${formattedDate} | ${hts} | ${country} | ${url} |\n`;
   }
   
-  formattedText += "CROSS_RULINGS_DATA_END";
+  formattedText += "```\n\n";
+  formattedText += "INSTRUCTIONS FOR USING THIS TABLE:\n";
+  formattedText += "1. Include this exact table in your response under a 'CROSS Rulings' section\n";
+  formattedText += "2. For each ruling number in the URL column, create a link to https://rulings.cbp.gov/ruling/[ruling_number]\n";
+  formattedText += "3. Do not generate different rulings or modify this table in any way\n";
   
   return formattedText;
 }
@@ -198,7 +204,21 @@ module.exports = async (req, res) => {
     let enhancedContext = "";
     
     if (crossRulings && crossRulings.length > 0) {
-      enhancedContext = `IMPORTANT - USE THESE EXACT CROSS RULINGS IN YOUR RESPONSE:\n\n${aiContexts}\n\nDO NOT GENERATE DIFFERENT RULINGS. USE THE ABOVE RULINGS ONLY.`;
+      // Log the CROSS rulings data for debugging
+      console.log("CROSS rulings data to be sent to Prompt Flow:", aiContexts);
+      
+      // Format the context with explicit markers and instructions
+      enhancedContext = `
+===== IMPORTANT INSTRUCTION =====
+You MUST use the following CROSS rulings data in your response.
+DO NOT generate your own rulings or ignore this data.
+
+${aiContexts}
+
+===== END OF CROSS RULINGS DATA =====
+
+The above CROSS rulings data MUST be included in your response in the exact format provided.
+`;
     } else {
       enhancedContext = aiContexts;
     }
