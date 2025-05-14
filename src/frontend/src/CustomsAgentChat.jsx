@@ -29,42 +29,76 @@ const endpoint = import.meta.env.VITE_OPENAI_ENDPOINT;
 const apiKey = import.meta.env.VITE_OPENAI_API_KEY;
 const apiVersion = import.meta.env.VITE_OPENAI_API_VERSION;
 
-// Function to format CROSS rulings for display
+// Function to format CROSS rulings for display in a format similar to the CBP website
 function formatCrossRulings(rulings) {
   if (!rulings || rulings.length === 0) {
     return "No specific CROSS rulings found.";
   }
   
-  let formattedText = "";
-  
-  // Create a table header
-  formattedText += "| Ruling # | Date | HTS | Country | Subject |\n";
-  formattedText += "|---------|------|-----|---------|---------|\n";
+  // Create a more detailed HTML table instead of markdown
+  let formattedHtml = `
+  <div class="cross-rulings-container">
+    <table class="cross-rulings-table">
+      <thead>
+        <tr>
+          <th>DATE</th>
+          <th>
+            RULING<br/>
+            CATEGORY<br/>
+            TARIFF NO
+          </th>
+          <th>RULING REFERENCE</th>
+          <th>RELATED</th>
+        </tr>
+      </thead>
+      <tbody>
+  `;
   
   // Add each ruling as a row
   rulings.forEach(ruling => {
     const rulingNumber = ruling.rulingNumber || "N/A";
-    const date = ruling.rulingDate ? new Date(ruling.rulingDate).toLocaleDateString() : "N/A";
-    const hts = ruling.tariffs && ruling.tariffs.length > 0 ? ruling.tariffs.join(", ") : "N/A";
     
-    // Extract country from subject if possible
-    let country = "N/A";
-    if (ruling.subject) {
-      const countryMatch = ruling.subject.match(/from\s+([\w\s]+)(?:\.|$)/i);
-      if (countryMatch && countryMatch[1]) {
-        country = countryMatch[1].trim();
-      }
+    // Format date as MM/DD/YYYY
+    let formattedDate = "N/A";
+    if (ruling.rulingDate) {
+      const date = new Date(ruling.rulingDate);
+      formattedDate = `${(date.getMonth() + 1).toString().padStart(2, '0')}/${date.getDate().toString().padStart(2, '0')}/${date.getFullYear()}`;
     }
     
-    // Truncate subject if too long
-    const subject = ruling.subject ? 
-      (ruling.subject.length > 50 ? ruling.subject.substring(0, 47) + "..." : ruling.subject) : 
-      "N/A";
+    // Format HTS codes with links
+    let tariffLinks = "";
+    if (ruling.tariffs && ruling.tariffs.length > 0) {
+      tariffLinks = ruling.tariffs.map(tariff => {
+        // Remove any colons that might be in the tariff code
+        const cleanTariff = tariff.replace(/^:/, '');
+        return `<a href="https://hts.usitc.gov/?query=${cleanTariff}" target="_blank" class="tariff-link">${cleanTariff}</a>`;
+      }).join('<br/>');
+    }
     
-    formattedText += `| ${rulingNumber} | ${date} | ${hts} | ${country} | ${subject} |\n`;
+    // Extract subject
+    const subject = ruling.subject || "N/A";
+    
+    formattedHtml += `
+      <tr>
+        <td>${formattedDate}</td>
+        <td>
+          <a href="https://rulings.cbp.gov/ruling/${rulingNumber}" target="_blank" class="ruling-link">${rulingNumber}</a><br/>
+          ${ruling.categories || "Classification"}<br/>
+          ${tariffLinks}
+        </td>
+        <td>${subject}</td>
+        <td></td>
+      </tr>
+    `;
   });
   
-  return formattedText;
+  formattedHtml += `
+      </tbody>
+    </table>
+  </div>
+  `;
+  
+  return formattedHtml;
 }
 
 function CustomsAgentChat() {
