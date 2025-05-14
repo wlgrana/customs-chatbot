@@ -84,56 +84,7 @@ async function searchCrossRulings(term, pageSize = 3) {
   }
 }
 
-// Function to format CROSS rulings for context
-function formatCrossRulingsForContext(rulings, maxToFormat = 3) {
-  if (!rulings || rulings.length === 0) {
-    return "No specific CROSS rulings found.";
-  }
-  
-  // Create a more explicit format that's easier for the model to understand and use
-  let formattedText = "";
-  formattedText += "CROSS RULINGS TABLE - COPY THIS EXACT TABLE INTO YOUR RESPONSE:\n\n";
-  formattedText += "```markdown\n";
-  formattedText += "| Ruling # | Date | HTS | Country | URL |\n";
-  formattedText += "|---------|------|-----|---------|-----|\n";
-  
-  for (let i = 0; i < Math.min(rulings.length, maxToFormat); i++) {
-    const ruling = rulings[i];
-    const rulingNumber = ruling.rulingNumber || "N/A";
-    
-    // Format date in a more readable format
-    let formattedDate = "N/A";
-    if (ruling.rulingDate) {
-      const date = new Date(ruling.rulingDate);
-      formattedDate = `${(date.getMonth() + 1).toString().padStart(2, '0')}/${date.getDate().toString().padStart(2, '0')}/${date.getFullYear()}`;
-    }
-    
-    // Format HTS codes
-    const hts = ruling.tariffs && ruling.tariffs.length > 0 ? ruling.tariffs.join(', ') : "N/A";
-    
-    // Extract country from subject if possible
-    let country = "N/A";
-    if (ruling.subject) {
-      const countryMatch = ruling.subject.match(/from\s+([\w\s]+)(?:\.|$)/i);
-      if (countryMatch && countryMatch[1]) {
-        country = countryMatch[1].trim();
-      }
-    }
-    
-    // Create URL column with the ruling number as the value
-    const url = rulingNumber;
-    
-    formattedText += `| ${rulingNumber} | ${formattedDate} | ${hts} | ${country} | ${url} |\n`;
-  }
-  
-  formattedText += "```\n\n";
-  formattedText += "INSTRUCTIONS FOR USING THIS TABLE:\n";
-  formattedText += "1. Include this exact table in your response under a 'CROSS Rulings' section\n";
-  formattedText += "2. For each ruling number in the URL column, create a link to https://rulings.cbp.gov/ruling/[ruling_number]\n";
-  formattedText += "3. Do not generate different rulings or modify this table in any way\n";
-  
-  return formattedText;
-}
+// This function has been replaced with inline formatting in the main code
 
 module.exports = async (req, res) => {
   // Enable CORS
@@ -181,8 +132,8 @@ module.exports = async (req, res) => {
           
           if (crossRulings && crossRulings.length > 0) {
             console.log(`Successfully retrieved ${crossRulings.length} rulings from API for '${searchTerm}'.`);
-            aiContexts = formatCrossRulingsForContext(crossRulings, 3);
-            console.log("Formatted CROSS rulings for context:", aiContexts);
+            // We'll format the rulings directly in the question now, not in the context
+            aiContexts = `Additional context: CROSS rulings were found for '${searchTerm}' and will be included directly in the question.`;
           } else {
             console.log(`No rulings returned from API for '${searchTerm}'.`);
             aiContexts = `No specific U.S. Customs CROSS rulings were found for '${searchTerm}'.`;
@@ -199,33 +150,52 @@ module.exports = async (req, res) => {
       console.log("Message not identified as a classification question. No CROSS ruling search will be performed.");
     }
 
-    // Prepare payload for Azure Prompt Flow with CROSS rulings context
-    // Format the context to make CROSS rulings data stand out more prominently
-    let enhancedContext = "";
+    // Prepare payload for Azure Prompt Flow
+    // Instead of passing CROSS rulings as context, we'll modify the question to include the rulings
+    let enhancedQuestion = message;
     
     if (crossRulings && crossRulings.length > 0) {
-      // Log the CROSS rulings data for debugging
-      console.log("CROSS rulings data to be sent to Prompt Flow:", aiContexts);
+      // Format the rulings as a simple table directly in the question
+      let rulingsTable = "\n\nUSE THESE EXACT CROSS RULINGS IN YOUR RESPONSE:\n\n";
+      rulingsTable += "| Ruling # | Date | HTS | Country | URL |\n";
+      rulingsTable += "|---------|------|-----|---------|-----|\n";
       
-      // Format the context with explicit markers and instructions
-      enhancedContext = `
-===== IMPORTANT INSTRUCTION =====
-You MUST use the following CROSS rulings data in your response.
-DO NOT generate your own rulings or ignore this data.
-
-${aiContexts}
-
-===== END OF CROSS RULINGS DATA =====
-
-The above CROSS rulings data MUST be included in your response in the exact format provided.
-`;
-    } else {
-      enhancedContext = aiContexts;
+      for (const ruling of crossRulings.slice(0, 3)) {
+        const rulingNumber = ruling.rulingNumber || "N/A";
+        
+        // Format date
+        let formattedDate = "N/A";
+        if (ruling.rulingDate) {
+          const date = new Date(ruling.rulingDate);
+          formattedDate = `${(date.getMonth() + 1).toString().padStart(2, '0')}/${date.getDate().toString().padStart(2, '0')}/${date.getFullYear()}`;
+        }
+        
+        // Format HTS codes
+        const hts = ruling.tariffs && ruling.tariffs.length > 0 ? ruling.tariffs.join(', ') : "N/A";
+        
+        // Extract country from subject
+        let country = "N/A";
+        if (ruling.subject) {
+          const countryMatch = ruling.subject.match(/from\s+([\w\s]+)(?:\.|$)/i);
+          if (countryMatch && countryMatch[1]) {
+            country = countryMatch[1].trim();
+          }
+        }
+        
+        rulingsTable += `| ${rulingNumber} | ${formattedDate} | ${hts} | ${country} | ${rulingNumber} |\n`;
+      }
+      
+      rulingsTable += "\nDO NOT GENERATE DIFFERENT RULINGS. USE THE ABOVE RULINGS ONLY.";
+      
+      // Append the rulings table to the question
+      enhancedQuestion = message + rulingsTable;
+      
+      console.log("Enhanced question with CROSS rulings:", enhancedQuestion);
     }
     
     const payload = {
-      question: message,
-      contexts: enhancedContext
+      question: enhancedQuestion,
+      contexts: aiContexts
     };
 
     console.log("Sending payload to Azure ML:", payload);
