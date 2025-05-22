@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import axios from "axios";
 import { marked } from "marked";
 import DOMPurify from "dompurify";
@@ -29,6 +29,15 @@ function CopyIcon({ text }) {
 const endpoint = import.meta.env.VITE_OPENAI_ENDPOINT;
 const apiKey = import.meta.env.VITE_OPENAI_API_KEY;
 const apiVersion = import.meta.env.VITE_OPENAI_API_VERSION;
+
+// Configure marked to make all links open in a new tab
+marked.use({
+  renderer: {
+    link(href, title, text) {
+      return `<a href="${href}" target="_blank" rel="noopener noreferrer" title="${title || ''}">${text}</a>`;
+    }
+  }
+});
 
 // Function to format CROSS rulings for display in a format similar to the CBP website
 function formatCrossRulings(rulings) {
@@ -67,6 +76,7 @@ function formatCrossRulings(rulings) {
     const subject = ruling.subject || "N/A";
     
     // Format the ruling category and tariff column
+    // No need to add target="_blank" here as the marked renderer will handle this
     const rulingCategory = `[${rulingNumber}](https://rulings.cbp.gov/ruling/${rulingNumber})<br>${ruling.categories || "Classification"}<br>${tariffs}`;
     
     formattedText += `| ${formattedDate} | ${rulingCategory} | ${subject} | |\n`;
@@ -99,8 +109,27 @@ function CustomsAgentChat() {
   };
 
   // Effect to scroll to bottom when messages change
-  React.useEffect(() => {
+  useEffect(() => {
     scrollToBottom();
+  }, [messages]);
+  
+  // Effect to add target="_blank" to all links after rendering
+  useEffect(() => {
+    // Add event listener to set up links in sanitized content
+    const ensureExternalLinksOpenInNewTab = () => {
+      const chatWindow = chatWindowRef.current;
+      if (chatWindow) {
+        const links = chatWindow.querySelectorAll('a[href^="http"]');
+        links.forEach(link => {
+          if (!link.hasAttribute('target')) {
+            link.setAttribute('target', '_blank');
+            link.setAttribute('rel', 'noopener noreferrer');
+          }
+        });
+      }
+    };
+    
+    ensureExternalLinksOpenInNewTab();
   }, [messages]);
 
   const sendMessage = async () => {
