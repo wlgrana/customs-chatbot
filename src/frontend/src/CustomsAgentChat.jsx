@@ -3,6 +3,7 @@ import axios from "axios";
 import { marked } from "marked";
 import DOMPurify from "dompurify";
 import "./styles.css";
+import packageInfo from '../package.json';
 // SECURITY: Always sanitize markdown output before using dangerouslySetInnerHTML!
 
 function CopyIcon({ text }) {
@@ -333,6 +334,9 @@ function CustomsAgentChat() {
             Send
           </button>
         )}
+      </div>
+      <div className="app-footer">
+        <span className="version-info">v{packageInfo.version}</span>
       </div>
     </div>
   );
